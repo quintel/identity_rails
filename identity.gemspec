@@ -21,9 +21,12 @@ Gem::Specification.new do |spec|
     Dir['{app,config,db,lib}/**/*', 'MIT-LICENSE', 'Rakefile', 'README.md']
   end
 
-  spec.add_dependency 'dry-configurable', '~> 1.0'
-  spec.add_dependency 'dry-initializer', '~> 3.1'
+  spec.add_dependency 'dry-configurable', '>= 1.0'
+  spec.add_dependency 'dry-initializer', '>= 3.1'
   spec.add_dependency 'dry-types', '~> 1.7'
   spec.add_dependency 'oauth2', '>= 2.0'
+  spec.add_dependency 'omniauth', '>= 2.1'
+  spec.add_dependency 'omniauth-oauth2', '>= 1.8'
+  spec.add_dependency 'omniauth-rails_csrf_protection', '~> 1.0'
   spec.add_dependency 'rails', '>= 7.0.0'
 end
