@@ -3,4 +3,7 @@
 <h1>Please sign in</h1>
 <p>The page you wanted to view requires that you first sign in to your account.</p>
 
-<%= render partial: 'identity/auth/sign_in_button' %>
+<div class="buttons">
+  <%= render partial: 'identity/auth/back_button', locals: { url: :back } %>
+  <%= render partial: 'identity/auth/sign_in_button' %>
+</div>

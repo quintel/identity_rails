@@ -8,12 +8,14 @@
   <% end %>
 </p>
 
-<%= link_to 'Go back', :back %>
+<div class="buttons">
+  <%= render partial: 'identity/auth/back_button', locals: { url: :back } %>
 
-<% if signed_in? %>
-  <%= button_to '/auth/logout', method: :post do %>
-    Sign out
-  <% end%>
-<% else %>
-  <%= render partial: 'identity/auth/sign_in_button' %>
-<% end %>
+  <% if signed_in? %>
+    <%= button_to '/auth/logout', method: :post do %>
+      Sign out
+    <% end%>
+  <% else %>
+    <%= render partial: 'identity/auth/sign_in_button' %>
+  <% end %>
+</div>
