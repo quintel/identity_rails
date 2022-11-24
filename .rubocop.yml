@@ -167,3 +167,7 @@ Metrics:
 
 RSpec/ExampleLength:
   Enabled: false
+
+RSpec/MultipleExpectations:
+  Exclude:
+    - spec/system/**/*

@@ -9,7 +9,14 @@
 </head>
 <body>
 
-<%= yield %>
+  <div class="box">
+    <div class="logo-wrapper">
+      <%=  image_tag 'identity/logo300@2x.png', width: 300, height: 37, alt: '' %>
+    </div>
+    <div class="content">
+      <%= yield %>
+    </div>
+  </div>
 
 </body>
 </html>

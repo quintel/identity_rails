@@ -13,7 +13,7 @@ module Identity
 
       session[:identity] = id_session.dump
 
-      redirect_to(session.delete(:return_to) || '/')
+      redirect_to(return_to_path('/'))
     end
 
     def failure; end

@@ -1,0 +1,19 @@
+<h1>Page not found</h1>
+
+<p>
+  The page you were looking for was not found.
+
+  <% unless signed_in? %>
+    If you were expecting something to be here, please sign in to your account.
+  <% end %>
+</p>
+
+<%= link_to 'Go back', :back %>
+
+<% if signed_in? %>
+  <%= button_to '/auth/logout', method: :post do %>
+    Sign out
+  <% end%>
+<% else %>
+  <%= render partial: 'identity/auth/sign_in_button' %>
+<% end %>

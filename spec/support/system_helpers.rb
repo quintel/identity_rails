@@ -16,7 +16,6 @@ module SystemHelpers
   private
 
   def mock_onmiauth_sign_in(roles: ['user'], expires: 1.hour.from_now)
-    OmniAuth.config.test_mode = true
     OmniAuth.config.mock_auth[:identity] = OmniAuth::AuthHash.new(
       'provider' => 'identity',
       'uid' => SecureRandom.random_number(1e10.to_i),

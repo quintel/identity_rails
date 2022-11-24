@@ -15,6 +15,7 @@
         Signed in as <%= current_user.email %>
       <% else %>
         Not signed in
+        <%= button_to 'Sign in', sign_in_path, method: :post %>
       <% end %>
     </header>
 
