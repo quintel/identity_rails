@@ -38,6 +38,7 @@ module Identity
   end
 end
 
+require_relative 'identity/controller_helpers'
 require_relative 'identity/engine'
 require_relative 'identity/errors'
 require_relative 'identity/omniauth/strategy'

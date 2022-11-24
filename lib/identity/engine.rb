@@ -16,6 +16,13 @@ module Identity
       end
     end
 
+    # Include the ControllerHelpers in the application.
+    initializer 'identity.controller_helpers' do
+      ActiveSupport.on_load(:action_controller) do
+        include Identity::ControllerHelpers
+      end
+    end
+
     config.generators do |g|
       g.test_framework(:rspec)
     end

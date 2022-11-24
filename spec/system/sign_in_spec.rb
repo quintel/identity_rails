@@ -10,6 +10,8 @@ RSpec.describe 'Sign in', type: :system do
 
     click_button 'Sign in'
 
+    expect(page).to have_css('header', text: 'Signed in as hello@example.org')
+
     visit '/authenticated/user'
     expect(page).to have_content('User page')
 
@@ -25,6 +27,8 @@ RSpec.describe 'Sign in', type: :system do
     expect(page).to have_content('Please sign in to your account')
 
     click_button 'Sign in'
+
+    expect(page).to have_css('header', text: 'Signed in as hello@example.org')
 
     visit '/authenticated/user'
     expect(page).to have_content('User page')
