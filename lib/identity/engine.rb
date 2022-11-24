@@ -23,6 +23,11 @@ module Identity
       end
     end
 
+    # Compile assets.
+    initializer 'engine_name.assets.precompile' do |app|
+      app.config.assets.precompile << 'identity_manifest.js'
+    end
+
     config.generators do |g|
       g.test_framework(:rspec)
     end
