@@ -8,7 +8,9 @@ module Identity
       return true if referrer.blank?
 
       uri = URI.parse(referrer)
-      !uri.path.start_with?('/auth/') && uri.host == request.host
+
+      (uri.host != request.host || uri.path != request.path) &&
+        (!uri.path.start_with?('/auth/') && uri.host == request.host)
     end
   end
 end
