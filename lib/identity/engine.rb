@@ -11,7 +11,10 @@ module Identity
           Identity.config.client_id,
           Identity.config.client_secret,
           name: 'identity',
-          scope: Identity.config.scope
+          scope: Identity.config.scope,
+          client_options: {
+            site: Identity.config.issuer
+          }
         )
       end
     end
