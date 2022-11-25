@@ -13,6 +13,7 @@
     <header>
       <% if signed_in? %>
         Signed in as <%= current_user.email %>
+        <%= button_to 'Sign out', sign_out_path, method: :post %>
       <% else %>
         Not signed in
         <%= button_to 'Sign in', sign_in_path, method: :post %>

@@ -13,6 +13,14 @@ module SystemHelpers
     mock_onmiauth_sign_in(roles: %w[user admin])
   end
 
+  # Signs in as a user.
+  def sign_in
+    mock_omniauth_user_sign_in
+
+    visit('/')
+    click_button('Sign in')
+  end
+
   private
 
   def mock_onmiauth_sign_in(roles: ['user'], expires: 1.hour.from_now)

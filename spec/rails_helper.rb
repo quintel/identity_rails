@@ -16,6 +16,12 @@ require_relative 'support/system_helpers'
 OmniAuth.config.test_mode = true
 OmniAuth.config.logger = Rails.logger
 
+require 'dry/configurable/test_interface'
+
+module Identity
+  enable_test_interface
+end
+
 # Requires supporting ruby files with custom matchers and macros, etc, in
 # spec/support/ and its subdirectories. Files matching `spec/**/*_spec.rb` are
 # run as spec files by default. This means that files in spec/support that end
@@ -70,6 +76,7 @@ RSpec.configure do |config|
   # arbitrary gems may also be filtered via:
   # config.filter_gems_from_backtrace("gem name")
 
+  config.include(SystemHelpers, type: :request)
   config.include(SystemHelpers, type: :system)
 
   config.before(:each, type: :system) do

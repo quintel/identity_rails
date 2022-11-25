@@ -8,6 +8,7 @@ module Identity
     included do
       helper_method :current_user
       helper_method :sign_in_path
+      helper_method :sign_out_path
       helper_method :signed_in?
     end
 
@@ -52,6 +53,10 @@ module Identity
 
     def sign_in_path
       '/auth/identity'
+    end
+
+    def sign_out_path
+      '/auth/logout'
     end
 
     private

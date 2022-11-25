@@ -6,5 +6,7 @@ Rails.application.routes.draw do
   get '/authenticated/admin', to: 'authenticated#admin'
   get '/authenticated/user', to: 'authenticated#user'
 
-  root 'home#root'
+  get '/logout', to: 'provider#logout'
+
+  root to: 'home#root'
 end
