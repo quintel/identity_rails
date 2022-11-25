@@ -3,7 +3,7 @@
 module Identity
   # Handles OAuth2 callbacks and failures.
   class AuthController < ApplicationController
-    def start; end
+    def sign_in; end
 
     def callback
       id_session = Identity::Session.from_omniauth(
