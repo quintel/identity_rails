@@ -23,6 +23,8 @@ module Identity
       return redirect_to('/') unless signed_in?
 
       reset_session
+
+      flash[:notice] = 'You have been signed out.'
       redirect_to logout_url, allow_other_host: true
     end
 
