@@ -17,9 +17,15 @@ blocks:
       jobs:
         - name: Test
           commands:
+            - sem-version ruby $RUBY_VERSION
             - checkout
             - cache restore
             - bundle config set --local deployment 'true'
             - bundle install
             - cache store
             - bundle exec rspec --format progress
+          matrix:
+            - env_var: RUBY_VERSION
+              values:
+                - '2.7'
+                - '3.1'
