@@ -12,6 +12,17 @@ module Identity
       helper_method :signed_in?
     end
 
+    # Rendering helpers
+    # -----------------
+
+    def render_identity_sign_in(status: :forbidden, **options)
+      render('identity/auth/sign_in', layout: 'identity/application', status: status, **options)
+    end
+
+    def render_identity_not_authorized(status: :not_found, **options)
+      render('identity/auth/not_authorized', layout: 'identity/application', status: status, **options)
+    end
+
     # Filters/Actions
     # ---------------
 
@@ -20,10 +31,10 @@ module Identity
     # If the user is signed in, the action will be executed as normal otherwise the "not authorized"
     # page will be rendered.
     def authenticate_user!
-      unless signed_in?
-        remember_return_to_path
-        render('identity/auth/not_authorized', layout: 'identity/application', status: :not_found)
-      end
+      return if signed_in?
+
+      remember_return_to_path
+      render_identity_not_authorized
     end
 
     # Used as a before_action to ensure that the user is signed in and has the admin role.
@@ -31,10 +42,10 @@ module Identity
     # If the user is authorized, the action will be executed as normal otherwise the "not
     # authorized" page will be rendered.
     def authenticate_admin!
-      unless signed_in? && current_user.admin?
-        remember_return_to_path
-        render('identity/auth/not_authorized', layout: 'identity/application', status: :not_found)
-      end
+      return if signed_in? && current_user.admin?
+
+      remember_return_to_path
+      render_identity_not_authorized
     end
 
     # Users
