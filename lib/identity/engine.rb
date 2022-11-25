@@ -20,6 +20,7 @@ module Identity
     initializer 'identity.controller_helpers' do
       ActiveSupport.on_load(:action_controller) do
         include Identity::ControllerHelpers
+        helper Identity::ApplicationHelper
       end
     end
 
