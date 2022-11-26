@@ -132,6 +132,115 @@ RSpec.describe Identity::Session do
     end
   end
 
+  # ------------------------------------------------------------------------------------------------
+
+  describe '.load_fresh' do
+    let(:user_attributes) do
+      {
+        'id' => '123',
+        'roles' => %w[admin],
+        'email' => 'hello@example.org',
+        'name' => 'John Doe'
+      }
+    end
+
+    let(:token_attributes) do
+      {
+        'token_type' => 'Bearer',
+        'scope' => 'public',
+        'access_token' => '__access_token__',
+        'refresh_token' => '__refresh_token__',
+        'created_at' => Time.now.to_i,
+        'expires_at' => expires_at.to_i
+      }
+    end
+
+    let(:session) do
+      described_class.load_fresh(
+        oauth_client,
+        user: user_attributes,
+        access_token: token_attributes,
+        issuer: Identity.config.issuer
+      )
+    end
+
+    context 'when the access token is valid' do
+      let(:expires_at) { Time.now + 3600 }
+
+      it 'returns a session' do
+        expect(session).to be_a(described_class)
+      end
+
+      it 'sets the access token' do
+        expect(session.access_token.token).to eq('__access_token__')
+      end
+
+      it 'sets the user' do
+        expect(session.user.email).to eq('hello@example.org')
+      end
+    end
+
+    context 'when the access token is expired' do
+      let(:expires_at) { Time.now - 1 }
+
+      before do
+        new_token = Identity.access_token('token' => '__refreshed_access_token__')
+
+        allow(oauth_client).to receive(:get_token)
+          .with({ grant_type: 'refresh_token', refresh_token: '__refresh_token__' }, {})
+          .and_return(new_token)
+
+        allow(new_token).to receive(:get).with('me.json')
+          .and_return(instance_double(
+            OAuth2::Response,
+            parsed: user_attributes.merge('email' => 'new@example.org')
+          ))
+      end
+
+      it 'returns a new session' do
+        expect(session).to be_a(described_class)
+      end
+
+      it 'refreshes the access token' do
+        expect(session.access_token.token).to eq('__refreshed_access_token__')
+      end
+
+      it 'refreshes the user data' do
+        expect(session.user.email).to eq('new@example.org')
+      end
+    end
+
+    context 'when the grant has been revoked' do
+      let(:expires_at) { Time.now - 1 }
+
+      before do
+        allow(oauth_client).to receive(:get_token)
+          .with({ grant_type: 'refresh_token', refresh_token: '__refresh_token__' }, {})
+          .and_raise(OAuth2::Error.new('error' => 'invalid_grant'))
+      end
+
+      it 'raises an InvalidGrant' do
+        expect { session }.to raise_error(Identity::InvalidGrant)
+      end
+    end
+
+    context 'when an OAuth2 error occurs' do
+      let(:expires_at) { Time.now - 1 }
+
+      before do
+        allow(oauth_client).to receive(:get_token)
+          .with({ grant_type: 'refresh_token', refresh_token: '__refresh_token__' }, {})
+          .and_raise(OAuth2::Error.new('error' => 'invalid_request'))
+      end
+
+      it 'raises an Error' do
+        expect { session }.to raise_error(Identity::Error, /invalid_request/)
+      end
+    end
+  end
+
+  # ------------------------------------------------------------------------------------------------
+
   describe '#dump' do
     let(:user) do
       Identity::User.new(

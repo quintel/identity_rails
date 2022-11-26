@@ -75,7 +75,7 @@ module Identity
     def identity_session
       return nil unless session[:identity].present?
 
-      @identity_session ||= Identity::Session.load(Identity.oauth_client, session[:identity])
+      @identity_session ||= Identity::Session.load_fresh(Identity.oauth_client, session[:identity])
     end
 
     # Remembers the current path so that the user can be redirected back to it after signing in.

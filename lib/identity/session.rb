@@ -24,7 +24,7 @@ module Identity
         )
       end
 
-      def load(oath_client, hash)
+      def load(oauth_client, hash)
         hash = serializer.loadable_hash(hash)
 
         if Identity.config.issuer != hash[:issuer]
@@ -33,8 +33,13 @@ module Identity
 
         new(
           user: User.load(hash[:user]),
-          access_token: OAuth2::AccessToken.from_hash(oath_client, hash[:access_token])
+          access_token: OAuth2::AccessToken.from_hash(oauth_client, hash[:access_token])
         )
+      end
+
+      def load_fresh(oauth_client, hash)
+        session = load(oauth_client, hash)
+        session.expired? ? session.refresh : session
       end
     end
 
@@ -43,16 +48,20 @@ module Identity
     end
 
     def expired?
-      @token.expired?
+      @access_token.expired?
     end
 
-    def can_refresh?
-      @token.refresh_token.present?
-    end
-
-    # Refreshes the token. Raises an OAuth2::Error if the refresh request fails.
+    # Creates a new session with a refreshed token. Also fetches a fresh copy of the user data in
+    # case anything has changed.
+    #
+    # @return [Session] a new session with the refreshed token
     def refresh
-      @token = @token.refresh
+      new_token = @access_token.refresh
+      user_data = new_token.get('me.json').parsed
+
+      self.class.new(user: User.load(user_data), access_token: new_token)
+    rescue OAuth2::Error => e
+      raise(e.code == 'invalid_grant' ? InvalidGrant : Error, e.message)
     end
   end
 end

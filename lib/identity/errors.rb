@@ -3,6 +3,9 @@
 module Identity
   class Error < RuntimeError; end
 
+  # Raised when refreshing a token fails due to the grant being revoked.
+  class InvalidGrant < Error; end
+
   # Raised when loading user data from the session fails because the schema version of the user
   # data does not match the current schema version.
   class SchemaMismatch < Error

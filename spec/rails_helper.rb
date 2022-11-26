@@ -79,6 +79,10 @@ RSpec.configure do |config|
   config.include(SystemHelpers, type: :request)
   config.include(SystemHelpers, type: :system)
 
+  config.before do
+    Identity.config.issuer = Capybara.default_host
+  end
+
   config.before(:each, type: :system) do
     driven_by :rack_test
   end
