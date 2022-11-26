@@ -12,6 +12,8 @@ module Identity
       helper_method :signed_in?
     end
 
+    IDENTITY_SESSION_KEY = 'identity.session'
+
     # Rendering helpers
     # -----------------
 
@@ -73,9 +75,12 @@ module Identity
     private
 
     def identity_session
-      return nil unless session[:identity].present?
+      return nil unless session[IDENTITY_SESSION_KEY].present?
 
-      @identity_session ||= Identity::Session.load_fresh(Identity.oauth_client, session[:identity])
+      @identity_session ||= Identity::Session.load_fresh(
+        Identity.oauth_client,
+        session[IDENTITY_SESSION_KEY]
+      )
     end
 
     # Remembers the current path so that the user can be redirected back to it after signing in.

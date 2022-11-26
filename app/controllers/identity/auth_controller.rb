@@ -13,7 +13,7 @@ module Identity
 
       rotate_session
 
-      session[:identity] = id_session.dump
+      session[IDENTITY_SESSION_KEY] = id_session.dump
       redirect_to(return_to_path('/'))
     end
 
