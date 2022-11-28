@@ -26,7 +26,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'dry-types', '~> 1.7'
   spec.add_dependency 'oauth2', '>= 2.0'
   spec.add_dependency 'omniauth', '>= 2.1'
-  spec.add_dependency 'omniauth-oauth2', '>= 1.8'
+  spec.add_dependency 'omniauth_openid_connect', '~> 0.4'
   spec.add_dependency 'omniauth-rails_csrf_protection', '~> 1.0'
   spec.add_dependency 'rails', '>= 7.0.0'
 end

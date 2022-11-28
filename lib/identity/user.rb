@@ -23,10 +23,10 @@ module Identity
       # Public: Creates a user from an OmniAuth::AuthHash.
       def from_omniauth_hash(hash)
         new(
-          id: hash['uid'],
-          roles: hash['info']['roles'],
-          email: hash['info']['email'],
-          name: hash['info']['name']
+          id: hash['sub'],
+          roles: hash['roles'].to_a,
+          email: hash['email'],
+          name: hash['name']
         )
       end
 

@@ -10,12 +10,10 @@ RSpec.describe Identity::Session do
       described_class.from_omniauth(
         token,
         {
-          'uid' => '123',
-          'info' => {
-            'email' => 'hello@example.org',
-            'name' => 'John Doe',
-            'roles' => %w[admin]
-          }
+          'sub' => '123',
+          'email' => 'hello@example.org',
+          'name' => 'John Doe',
+          'roles' => %w[admin]
         }
       )
     end
@@ -190,7 +188,7 @@ RSpec.describe Identity::Session do
           .with({ grant_type: 'refresh_token', refresh_token: '__refresh_token__' }, {})
           .and_return(new_token)
 
-        allow(new_token).to receive(:get).with('me.json')
+        allow(new_token).to receive(:get).with('oauth/userinfo')
           .and_return(instance_double(
             OAuth2::Response,
             parsed: user_attributes.merge('email' => 'new@example.org')

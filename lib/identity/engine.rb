@@ -5,16 +5,36 @@ module Identity
     isolate_namespace Identity
 
     initializer 'identity.omniauth' do |app|
+      # Monkeypatches OpenIDConnect to keep the HTTP scheme instead of forcing HTTPS for discovery
+      # requests.
+      #
+      # See https://github.com/nov/openid_connect/issues/47#issuecomment-644799409
+      Module.new do
+        attr_reader :scheme
+
+        def initialize(uri)
+          @scheme = uri.scheme
+          super
+        end
+
+        def endpoint
+          URI::Generic.build(scheme: scheme, host: host, port: port, path: path)
+        rescue URI::Error => e
+          raise SWD::Exception, e.message
+        end
+
+        prepend_features(::OpenIDConnect::Discovery::Provider::Config::Resource)
+      end
+
       app.middleware.use(::OmniAuth::Builder) do
         provider(
-          Identity::OmniAuth::Strategy,
-          Identity.config.client_id,
-          Identity.config.client_secret,
+          :openid_connect,
           name: 'identity',
+          discovery: true,
+          issuer: Identity.config.issuer,
+          response_code: :code,
           scope: Identity.config.scope,
-          client_options: {
-            site: Identity.config.issuer
-          }
+          client_options: Identity.client_options
         )
       end
     end

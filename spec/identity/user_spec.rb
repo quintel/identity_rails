@@ -95,12 +95,10 @@ RSpec.describe Identity::User do
     context 'with a valid hash' do
       let(:user) do
         described_class.from_omniauth_hash(
-          'uid' => '123',
-          'info' => {
-            'email' => 'hello@example.org',
-            'name' => 'John Doe',
-            'roles' => %w[admin]
-          }
+          'sub' => '123',
+          'email' => 'hello@example.org',
+          'name' => 'John Doe',
+          'roles' => %w[admin]
         )
       end
 

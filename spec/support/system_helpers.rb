@@ -24,13 +24,14 @@ module SystemHelpers
   private
 
   def mock_onmiauth_sign_in(roles: ['user'], expires: 1.hour.from_now)
+    uid = SecureRandom.random_number(1e10.to_i)
+
     OmniAuth.config.mock_auth[:identity] = OmniAuth::AuthHash.new(
       'provider' => 'identity',
-      'uid' => SecureRandom.random_number(1e10.to_i),
+      'uid' => uid,
       'info' => {
         'email' => 'hello@example.org',
-        'name' => 'John Doe',
-        'roles' => roles
+        'nickname' => nil
       },
       'credentials' => {
         'token' => "test_access_#{SecureRandom.base58(16)}",
@@ -38,7 +39,14 @@ module SystemHelpers
         'expires_at' => expires.to_i,
         'expires' => true
       },
-      'extra' => {}
+      'extra' => {
+        'raw_info' => {
+          'sub' => uid,
+          'email' => 'hello@example.org',
+          'roles' => roles,
+          'name' => 'John Doe'
+        }
+      }
     )
   end
 end

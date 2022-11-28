@@ -57,7 +57,7 @@ module Identity
     # @return [Session] a new session with the refreshed token
     def refresh
       new_token = @access_token.refresh
-      user_data = new_token.get('me.json').parsed
+      user_data = new_token.get('oauth/userinfo').parsed
 
       self.class.new(user: User.load(user_data), access_token: new_token)
     rescue OAuth2::Error => e
