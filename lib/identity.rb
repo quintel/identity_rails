@@ -27,6 +27,9 @@ module Identity
   # The scopes to request when authenticating.
   setting :scope, default: 'public'
 
+  # A proc to call after a successful sign-in. The proc will be passed the Identity::Session object.
+  setting :on_sign_in
+
   # Returns the configured OAuth2 client.
   #
   # @return [OAuth2::Client]

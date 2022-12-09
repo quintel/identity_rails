@@ -14,6 +14,8 @@ module Identity
       rotate_session
       session[IDENTITY_SESSION_KEY] = id_session.dump
 
+      Identity.config.on_sign_in&.call(id_session)
+
       redirect_to(return_to_path(main_app.root_path))
     end
 
