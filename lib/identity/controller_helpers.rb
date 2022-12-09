@@ -6,10 +6,11 @@ module Identity
     extend ActiveSupport::Concern
 
     included do
-      helper_method :current_user
-      helper_method :sign_in_path
-      helper_method :sign_out_path
+      helper_method :identity_user
       helper_method :signed_in?
+
+      helper_method :sign_up_url
+      helper_method :user_profile_url
     end
 
     IDENTITY_SESSION_KEY = 'identity.session'
@@ -44,7 +45,7 @@ module Identity
     # If the user is authorized, the action will be executed as normal otherwise the "not
     # authorized" page will be rendered.
     def authenticate_admin!
-      return if signed_in? && current_user.admin?
+      return if signed_in? && identity_user.admin?
 
       remember_return_to_path
       render_identity_not_authorized
@@ -57,19 +58,26 @@ module Identity
       identity_session.present?
     end
 
-    def current_user
+    def identity_user
       identity_session&.user
     end
 
     # Routes
     # ------
 
-    def sign_in_path
-      '/auth/identity'
+    def user_profile_url
+      uri = URI.parse(Identity.config.issuer)
+      uri.path = '/identity/profile'
+      uri.query = { client_id: Identity.config.client_id }.to_query
+
+      uri.to_s
     end
 
-    def sign_out_path
-      '/auth/logout'
+    def sign_up_url
+      uri = URI.parse(Identity.config.issuer)
+      uri.path = '/identity/sign_up'
+
+      uri.to_s
     end
 
     private

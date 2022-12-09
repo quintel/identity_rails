@@ -6,7 +6,7 @@ RSpec.describe 'Auth', type: :request do
   describe 'POST /auth/logout' do
     context 'when not signed in' do
       it 'redirects to the root page' do
-        post '/auth/logout'
+        post '/auth/sign_out'
 
         expect(response).to redirect_to('/')
       end
@@ -21,22 +21,19 @@ RSpec.describe 'Auth', type: :request do
       end
 
       it 'redirects to the Identity app' do
-        post '/auth/logout'
+        post '/auth/sign_out'
 
         expect(response).to have_http_status(:found)
-        expect(response.location).to start_with("#{Identity.config.issuer}/logout")
+        expect(response.location).to start_with("#{Identity.config.issuer}/auth/sign_out")
       end
 
-      it 'includes the client ID and redirect to in the redirect query string' do
-        post '/auth/logout'
+      it 'includes the client ID in the redirect query string' do
+        post '/auth/sign_out'
 
         uri = URI.parse(response.location)
         query = Rack::Utils.parse_nested_query(CGI.unescape(uri.query))
 
-        expect(query).to eq(
-          'client_id' => 'abc123',
-          'return_to' => 'http://www.example.com/'
-        )
+        expect(query).to eq('client_id' => 'abc123')
       end
     end
   end

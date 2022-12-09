@@ -23,12 +23,6 @@ Identity.config.client_id = 'N8QmJxEELVK8gdjnLPTC6W6Etuf2cwcK'
 Identity.config.client_secret = 'qTG4zH6VZT2KPVinHE5KhBZoySTVAKD5'
 ```
 
-Finally, update `config/routes.rb` to mount the engine:
-
-```ruby
-mount Identity::Engine => '/auth'
-```
-
 **Note that the mount path `/auth` is required, and must not be changed.**
 
 ## Usage
