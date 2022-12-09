@@ -31,6 +31,10 @@ module Identity
   # A proc to call after a successful sign-in. The proc will be passed the Identity::Session object.
   setting :on_sign_in
 
+  # Sets whether to validate the config when mounting the Rails engine. It's useful to disabling
+  # this when, for example, building production images where the config is not yet available.
+  setting :validate_config, default: true
+
   # Returns the configured OAuth2 client.
   #
   # @return [OAuth2::Client]
