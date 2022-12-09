@@ -2,6 +2,7 @@
 
 require 'dry-initializer'
 require 'dry-types'
+require 'dry-validation'
 require 'oauth2'
 require 'omniauth'
 require 'omniauth_openid_connect'
@@ -62,6 +63,7 @@ module Identity
   end
 end
 
+require_relative 'identity/config_validator'
 require_relative 'identity/controller_helpers'
 require_relative 'identity/engine'
 require_relative 'identity/errors'

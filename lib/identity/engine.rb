@@ -3,6 +3,8 @@
 module Identity
   class Engine < ::Rails::Engine
     initializer 'identity.omniauth' do |app|
+      Identity::ConfigValidator.validate!(Identity.config.to_h)
+
       # Monkeypatches OpenIDConnect to keep the HTTP scheme instead of forcing HTTPS for discovery
       # requests.
       #

@@ -23,6 +23,7 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency 'dry-configurable', '>= 1.0'
   spec.add_dependency 'dry-initializer', '>= 3.1'
+  spec.add_dependency 'dry-validation', '>= 1.10'
   spec.add_dependency 'dry-types', '~> 1.7'
   spec.add_dependency 'oauth2', '>= 2.0'
   spec.add_dependency 'omniauth', '>= 2.1'
