@@ -49,5 +49,11 @@ module Identity
     def dump
       self.class.serializer.dump(self)
     end
+
+    # Public: Returns if the user is equal to the other object. This is the case if the other object
+    # is also a user with the same ID.
+    def ==(other)
+      other.is_a?(self.class) && other.id == id
+    end
   end
 end

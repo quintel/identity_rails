@@ -157,4 +157,30 @@ RSpec.describe Identity::User do
       end
     end
   end
+
+  describe '#==' do
+    let(:user) { described_class.new(id: 1, roles: %w[user], email: '', name: 'John Doe') }
+
+    it 'returns true when the IDs are the same' do
+      expect(user).to eq(described_class.new(id: 1, roles: %w[user], email: '', name: 'John Doe'))
+    end
+
+    it 'returns true when the IDs are the same and other attributes differ' do
+      expect(user).to eq(described_class.new(id: 1, roles: %w[user], email: '', name: ''))
+    end
+
+    it 'returns false when the IDs are different' do
+      expect(user).not_to eq(
+        described_class.new(id: 2, roles: %w[user], email: '', name: 'John Doe')
+      )
+    end
+
+    it 'returns false when the other object is not a user' do
+      expect(user).not_to eq(Object.new)
+    end
+
+    it 'returns false when the other object is nil' do
+      expect(user).not_to eq(nil)
+    end
+  end
 end
