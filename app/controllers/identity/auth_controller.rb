@@ -12,15 +12,15 @@ module Identity
       )
 
       rotate_session
-
       session[IDENTITY_SESSION_KEY] = id_session.dump
-      redirect_to(return_to_path('/'))
+
+      redirect_to(return_to_path(main_app.root_path))
     end
 
     def failure; end
 
     def sign_out
-      return redirect_to('/') unless signed_in?
+      return redirect_to(main_app.root_path) unless signed_in?
 
       reset_session
 
