@@ -12,7 +12,7 @@ module Identity
   extend Dry::Configurable
 
   # The Identity service's base URL.
-  setting :issuer, default: 'https://id.energytransitionmodel.com'
+  setting :issuer, default: 'https://engine.energytransitionmodel.com'
 
   # The client ID to use when authenticating with the Identity service.
   setting :client_id
