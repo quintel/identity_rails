@@ -43,16 +43,11 @@ module Identity
 
     def logout_url
       return_to = URI(request.url)
-      return_to.path = '/'
-
-      request_params = {
-        return_to: return_to.to_s,
-        client_id: Identity.config.client_id
-      }
+      return_to.path = main_app.root_path
 
       uri = URI(Identity.config.issuer)
-      uri.path = '/logout'
-      uri.query = request_params.to_query
+      uri.path = '/auth/sign_out'
+      uri.query = { client_id: Identity.config.client_id }.to_query
 
       uri.to_s
     end
