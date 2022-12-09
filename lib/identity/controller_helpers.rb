@@ -75,11 +75,11 @@ module Identity
     private
 
     def identity_session
-      return nil unless session[IDENTITY_SESSION_KEY].present?
+      return nil unless identity_session_attributes.present?
 
       @identity_session ||= Identity::Session.load_fresh(
         Identity.oauth_client,
-        session[IDENTITY_SESSION_KEY]
+        identity_session_attributes
       )
     end
 
@@ -94,6 +94,11 @@ module Identity
     # fallback path.
     def return_to_path(fallback)
       session.delete(:return_to) || fallback
+    end
+
+    # Returns the attributes stored in the session for authentication.
+    def identity_session_attributes
+      session[IDENTITY_SESSION_KEY]
     end
   end
 end
