@@ -33,22 +33,22 @@ module Identity
     #
     # If the user is signed in, the action will be executed as normal otherwise the "not authorized"
     # page will be rendered.
-    def authenticate_user!
+    def authenticate_user!(show_as: :not_found)
       return if signed_in?
 
       remember_return_to_path
-      render_identity_not_authorized
+      show_as == :sign_in ? render_identity_sign_in : render_identity_not_authorized
     end
 
     # Used as a before_action to ensure that the user is signed in and has the admin role.
     #
     # If the user is authorized, the action will be executed as normal otherwise the "not
     # authorized" page will be rendered.
-    def authenticate_admin!
+    def authenticate_admin!(show_as: :not_found)
       return if signed_in? && identity_user.admin?
 
       remember_return_to_path
-      render_identity_not_authorized
+      show_as == :sign_in ? render_identity_sign_in : render_identity_not_authorized
     end
 
     # Users
