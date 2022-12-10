@@ -1,14 +1,11 @@
 <% content_for(:page_title, 'Sign in failure') %>
 
-<h1>Signing in to your account failed</h1>
+<h1><%= t('.title') %></h1>
 
 <% if params[:message] == 'access_denied' %>
-  <p>
-    You denied the request to give this application access to your account. You are not signed in
-    but may try again at any time.
-  </p>
+  <p><%= t('.denied') %></o>
 <% else %>
-  <p>Please sign in to your account to continue.</p>
+  <p><%= t('.description') %></p>
 <% end %>
 
 <div class="buttons">

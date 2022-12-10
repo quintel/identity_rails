@@ -1,0 +1,20 @@
+---
+nl:
+  identity:
+    auth:
+      failure:
+        title: Signing in to your account failed
+        description: Please sign in to your account to continue.
+        denied: |
+          You denied the request to give this application access to your account. You are not signed
+          in but may try again at any time.
+      not_authorized:
+        description: The page you were looking for was not found.
+        sign_in: If you were expecting something to be here, please sign in to your account.
+        title: Page not found
+      sign_in:
+        title: Please sign in
+        description: The page you wanted to view requires that you first sign in to your account.
+    go_back: Go back
+    sign_in: Sign in
+    sign_out: Sign out
