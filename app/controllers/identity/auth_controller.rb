@@ -46,7 +46,7 @@ module Identity
       return_to.path = main_app.root_path
 
       uri = URI(Identity.config.issuer)
-      uri.path = '/auth/sign_out'
+      uri.path = '/identity/sign_out'
       uri.query = { client_id: Identity.config.client_id }.to_query
 
       uri.to_s

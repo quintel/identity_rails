@@ -24,7 +24,7 @@ RSpec.describe 'Auth', type: :request do
         post '/auth/sign_out'
 
         expect(response).to have_http_status(:found)
-        expect(response.location).to start_with("#{Identity.config.issuer}/auth/sign_out")
+        expect(response.location).to start_with("#{Identity.config.issuer}/identity/sign_out")
       end
 
       it 'includes the client ID in the redirect query string' do
