@@ -47,7 +47,7 @@ module Identity
     OAuth2::AccessToken.new(
       Identity.oauth_client,
       credentials['token'],
-      expires_at: credentials['expires_at'],
+      expires_in: credentials['expires_in'],
       refresh_token: credentials['refresh_token']
     )
   end
