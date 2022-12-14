@@ -27,13 +27,15 @@ RSpec.describe 'Auth', type: :request do
         expect(response.location).to start_with("#{Identity.config.issuer}/identity/sign_out")
       end
 
-      it 'includes the client ID in the redirect query string' do
+      it 'includes the access token in the redirect query string' do
         post '/auth/sign_out'
 
         uri = URI.parse(response.location)
         query = Rack::Utils.parse_nested_query(CGI.unescape(uri.query))
 
-        expect(query).to eq('client_id' => 'abc123')
+        expect(query).to eq(
+          'access_token' => OmniAuth.config.mock_auth[:identity]['credentials']['token']
+        )
       end
     end
   end

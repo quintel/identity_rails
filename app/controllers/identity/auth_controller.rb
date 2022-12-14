@@ -24,10 +24,13 @@ module Identity
     def sign_out
       return redirect_to(main_app.root_path) unless signed_in?
 
+      # Resetting the session will remove the token, which we need to generate the logout URL.
+      provider_logout_url = logout_url
+
       reset_session
 
       flash[:notice] = 'You have been signed out.'
-      redirect_to logout_url, allow_other_host: true
+      redirect_to provider_logout_url, allow_other_host: true
     end
 
     private
@@ -47,7 +50,7 @@ module Identity
 
       uri = URI(Identity.config.issuer)
       uri.path = '/identity/sign_out'
-      uri.query = { client_id: Identity.config.client_id }.to_query
+      uri.query = { access_token: identity_session.access_token.token }.to_query
 
       uri.to_s
     end
