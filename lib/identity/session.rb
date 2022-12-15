@@ -39,9 +39,13 @@ module Identity
         )
       end
 
+      # Loads the session and refreshes the access token if it is about to expire.
+      #
+      # @return [Array<Session, Boolean>]
+      #   a tuple containing the sessiona nd a boolean indicating whether the session was refreshed
       def load_fresh(hash)
         session = load(hash)
-        session.expires_soon? ? session.refresh : session
+        session.expires_soon? ? [session.refresh, true] : [session, false]
       end
     end
 

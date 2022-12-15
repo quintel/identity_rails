@@ -84,13 +84,17 @@ module Identity
 
     def identity_session
       return nil unless identity_session_attributes.present?
+      return @identity_session if @identity_session
 
-      @identity_session ||= Identity::Session.load_fresh(identity_session_attributes)
+      id_session, refreshed = Identity::Session.load_fresh(identity_session_attributes)
+      session[IDENTITY_SESSION_KEY] = id_session.dump if refreshed
+
+      @identity_session = id_session
     rescue StandardError => e
-      reset_session
+      Rails.logger.error(e.message)
+      Sentry.capture_exception(e) if defined?(Sentry)
 
-      Rails.logger.error(exception.message)
-      Sentry.capture_exception(exception) if defined?(Sentry)
+      reset_session
 
       # A schema mismatch may occur if we change how we serialize data, and invalid grants can occur
       # if the user revokes the application's access to their account. Both are recoverable by

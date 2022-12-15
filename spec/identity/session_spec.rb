@@ -146,7 +146,7 @@ RSpec.describe Identity::Session do
       }
     end
 
-    let(:session) do
+    let(:result) do
       described_class.load_fresh(
         user: user_attributes,
         access_token: token_attributes,
@@ -154,11 +154,19 @@ RSpec.describe Identity::Session do
       )
     end
 
+    let(:session) do
+      result.first
+    end
+
     context 'when the access token is valid' do
       let(:expires_at) { Time.now + 3600 }
 
-      it 'returns a session' do
+      it 'returns a session as the first value' do
         expect(session).to be_a(described_class)
+      end
+
+      it 'returns that the session was not refreshed' do
+        expect(result.last).to be(false)
       end
 
       it 'sets the access token' do
@@ -208,8 +216,12 @@ RSpec.describe Identity::Session do
         allow(Identity).to receive(:http_client).and_return(conn)
       end
 
-      it 'returns a new session' do
+      it 'returns a new session as the first value' do
         expect(session).to be_a(described_class)
+      end
+
+      it 'returns that the session was refreshed' do
+        expect(result.last).to be(true)
       end
 
       it 'refreshes the access token' do
