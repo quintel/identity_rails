@@ -52,7 +52,8 @@ module Identity
     def refresh
       raise(Error, 'A refresh token is not available') unless refresh_token
 
-      response = http_client.post(Identity.discovery_config.token_endpoint, {
+      # Use top-level http_client as we dont want to send the expired access token.
+      response = Identity.http_client.post(Identity.discovery_config.token_endpoint, {
         refresh_token: refresh_token,
         grant_type: 'refresh_token',
         client_id: Identity.config.client_id,

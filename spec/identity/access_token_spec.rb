@@ -162,6 +162,15 @@ RSpec.describe Identity::AccessToken do
     end
   end
 
+  context 'when creating an HTTP client' do
+    it 'creates a client with the token' do
+      allow(Identity).to receive(:http_client)
+      described_class.new(**token_attributes.merge(refresh_token: nil)).http_client
+
+      expect(Identity).to have_received(:http_client).with(access_token: 'abc')
+    end
+  end
+
   context 'when refreshing the token' do
     context 'when no refresh token is set' do
       let(:token) { described_class.new(**token_attributes.merge(refresh_token: nil)) }
@@ -199,7 +208,7 @@ RSpec.describe Identity::AccessToken do
           end
         end
 
-        allow(Identity).to receive(:http_client).with(access_token: token.token).and_return(conn)
+        allow(Identity).to receive(:http_client).and_return(conn)
       end
 
       it 'returns an access token' do
@@ -249,7 +258,7 @@ RSpec.describe Identity::AccessToken do
           end
         end
 
-        allow(Identity).to receive(:http_client).with(access_token: token.token).and_return(conn)
+        allow(Identity).to receive(:http_client).and_return(conn)
       end
 
       it 'raises an error' do
@@ -275,7 +284,7 @@ RSpec.describe Identity::AccessToken do
           end
         end
 
-        allow(Identity).to receive(:http_client).with(access_token: token.token).and_return(conn)
+        allow(Identity).to receive(:http_client).and_return(conn)
       end
 
       it 'raises an error' do
