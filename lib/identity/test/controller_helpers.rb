@@ -13,8 +13,9 @@ module Identity
           issuer: Identity.config.issuer,
           user: user.identity_user.dump,
           access_token: {
-            access_token: "access_#{SecureRandom.base58}",
+            token: "access_#{SecureRandom.base58}",
             refresh_token: "refresh_#{SecureRandom.base58}",
+            created_at: Time.now.to_i,
             expires_at: nil
           }
         )
