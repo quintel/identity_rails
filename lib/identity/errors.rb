@@ -8,7 +8,7 @@ module Identity
       type, message =
         if e.response && e.response[:body].is_a?(Hash)
           [
-            e.response[:body]['error_type'] == 'invalid_grant' ? InvalidGrant : Error,
+            e.response[:body]['error'] == 'invalid_grant' ? InvalidGrant : Error,
             e.response[:body]['error_description']
           ]
         else
