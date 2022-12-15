@@ -45,11 +45,7 @@ module Identity
     end
 
     def logout_url
-      return_to = URI(request.url)
-      return_to.path = main_app.root_path
-
-      uri = URI(Identity.config.issuer)
-      uri.path = '/identity/sign_out'
+      uri = URI.parse(Identity.discovery_config.end_session_endpoint)
       uri.query = { access_token: identity_session.access_token.token }.to_query
 
       uri.to_s

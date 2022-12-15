@@ -91,6 +91,7 @@ RSpec.configure do |config|
 
     discovery = instance_double(
       OpenIDConnect::Discovery::Provider::Config::Response,
+      end_session_endpoint: "#{Identity.config.issuer}/identity/sign_out",
       token_endpoint: "#{Identity.config.issuer}/oauth/token",
       userinfo_endpoint: "#{Identity.config.issuer}/oauth/userinfo"
     )
