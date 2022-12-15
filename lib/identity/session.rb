@@ -63,7 +63,7 @@ module Identity
         .get(Identity.discovery_config.userinfo_endpoint)
         .body
 
-      self.class.new(user: User.load(user_data), access_token: new_token)
+      self.class.new(user: User.from_omniauth_hash(user_data), access_token: new_token)
     end
   end
 end

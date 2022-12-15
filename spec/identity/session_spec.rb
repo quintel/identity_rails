@@ -195,7 +195,12 @@ RSpec.describe Identity::Session do
             [
               200,
               { 'Content-Type': 'application/json; charset=utf-8' },
-              user_attributes.merge('email' => 'new@example.org').to_json
+              {
+                'sub' => user_attributes['id'],
+                'email' => 'new@example.org',
+                'roles' => user_attributes['roles'],
+                'name' => user_attributes['name']
+              }.to_json
             ]
           end
         end
