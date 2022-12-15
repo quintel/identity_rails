@@ -89,6 +89,9 @@ module Identity
     rescue StandardError => e
       reset_session
 
+      Rails.logger.error(exception.message)
+      Sentry.capture_exception(exception) if defined?(Sentry)
+
       # A schema mismatch may occur if we change how we serialize data, and invalid grants can occur
       # if the user revokes the application's access to their account. Both are recoverable by
       # signing the user out.
