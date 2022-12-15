@@ -7,7 +7,7 @@ module Identity
 
     def callback
       id_session = Identity::Session.from_omniauth(
-        Identity.access_token(request.env['omniauth.auth']['credentials']),
+        request.env['omniauth.auth']['credentials'],
         request.env['omniauth.auth']['extra']['raw_info']
       )
 

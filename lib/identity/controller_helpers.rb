@@ -85,10 +85,7 @@ module Identity
     def identity_session
       return nil unless identity_session_attributes.present?
 
-      @identity_session ||= Identity::Session.load_fresh(
-        Identity.oauth_client,
-        identity_session_attributes
-      )
+      @identity_session ||= Identity::Session.load_fresh(identity_session_attributes)
     end
 
     # Remembers the current path so that the user can be redirected back to it after signing in.

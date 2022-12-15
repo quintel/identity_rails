@@ -11,6 +11,7 @@ require 'rspec/rails'
 require 'capybara/rails'
 require 'capybara/rspec'
 
+require_relative 'support/http_client_helpers'
 require_relative 'support/system_helpers'
 
 OmniAuth.config.test_mode = true
@@ -87,6 +88,13 @@ RSpec.configure do |config|
       id_config.client_uri = Capybara.default_host
       id_config.scope = %w[public openid profile email]
     end
+
+    discovery = instance_double(
+      OpenIDConnect::Discovery::Provider::Config::Response,
+      token_endpoint: "#{Identity.config.issuer}/oauth/token",
+      userinfo_endpoint: "#{Identity.config.issuer}/oauth/userinfo"
+    )
+    allow(Identity).to receive(:discovery_config).and_return(discovery)
   end
 
   config.before(:each, type: :system) do

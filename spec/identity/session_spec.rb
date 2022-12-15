@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
 RSpec.describe Identity::Session do
-  let(:oauth_client) { instance_double(OAuth2::Client) }
-
   describe '.from_omniauth' do
-    let(:token) { instance_double(OAuth2::AccessToken) }
-
     let(:session) do
       described_class.from_omniauth(
-        token,
+        {
+          'token' => '__access_token__',
+          'refresh_token' => '__refresh_token__',
+          'expires_at' => (Time.now + 3600).to_i
+        },
         {
           'sub' => '123',
           'email' => 'hello@example.org',
@@ -28,7 +28,7 @@ RSpec.describe Identity::Session do
     end
 
     it 'sets the access token' do
-      expect(session.access_token).to eq(token)
+      expect(session.access_token.token).to eq('__access_token__')
     end
   end
 
@@ -44,9 +44,7 @@ RSpec.describe Identity::Session do
 
     let(:token_attributes) do
       {
-        'token_type' => 'Bearer',
-        'scope' => 'public',
-        'access_token' => '__access_token__',
+        'token' => '__access_token__',
         'refresh_token' => '__refresh_token__',
         'created_at' => Time.now.to_i,
         'expires_at' => (Time.now + 3600).to_i
@@ -56,7 +54,6 @@ RSpec.describe Identity::Session do
     context 'with valid attributes' do
       let(:session) do
         described_class.load(
-          oauth_client,
           user: user_attributes,
           access_token: token_attributes,
           issuer: Identity.config.issuer
@@ -68,7 +65,7 @@ RSpec.describe Identity::Session do
       end
 
       it 'sets the token' do
-        expect(session.access_token.to_hash.transform_keys(&:to_s)).to eq(token_attributes)
+        expect(session.access_token.dump.transform_keys(&:to_s)).to eq(token_attributes)
       end
     end
 
@@ -76,7 +73,6 @@ RSpec.describe Identity::Session do
       it 'raises an error'  do
         expect do
           described_class.load(
-            oauth_client,
             access_token: token_attributes,
             issuer: Identity.config.issuer
           )
@@ -91,7 +87,7 @@ RSpec.describe Identity::Session do
     context 'with a missing token' do
       it 'raises an error'  do
         expect do
-          described_class.load(oauth_client, user: user_attributes, issuer: Identity.config.issuer)
+          described_class.load(user: user_attributes, issuer: Identity.config.issuer)
         end
           .to raise_error(
             Identity::SchemaMismatch,
@@ -103,7 +99,7 @@ RSpec.describe Identity::Session do
     context 'with a missing issuer' do
       it 'raises an error'  do
         expect do
-          described_class.load(oauth_client, user: user_attributes, access_token: token_attributes)
+          described_class.load(user: user_attributes, access_token: token_attributes)
         end
           .to raise_error(
             Identity::SchemaMismatch,
@@ -116,7 +112,6 @@ RSpec.describe Identity::Session do
       it 'raises an error' do
         expect do
           described_class.load(
-            oauth_client,
             user: user_attributes,
             access_token: token_attributes,
             issuer: 'nope'
@@ -144,9 +139,7 @@ RSpec.describe Identity::Session do
 
     let(:token_attributes) do
       {
-        'token_type' => 'Bearer',
-        'scope' => 'public',
-        'access_token' => '__access_token__',
+        'token' => '__access_token__',
         'refresh_token' => '__refresh_token__',
         'created_at' => Time.now.to_i,
         'expires_at' => expires_at.to_i
@@ -155,7 +148,6 @@ RSpec.describe Identity::Session do
 
     let(:session) do
       described_class.load_fresh(
-        oauth_client,
         user: user_attributes,
         access_token: token_attributes,
         issuer: Identity.config.issuer
@@ -182,17 +174,33 @@ RSpec.describe Identity::Session do
       let(:expires_at) { Time.now - 1 }
 
       before do
-        new_token = Identity.access_token('token' => '__refreshed_access_token__')
+        conn = HTTPClientHelpers.fake_client do |stub|
+          stub.post('oauth/token') do |_env|
+            [
+              200,
+              { 'Content-Type': 'application/json; charset=utf-8' },
+              {
+                'access_token' => '__refreshed_access_token__',
+                'token_type' => 'Bearer',
+                'expires_in' => 7200,
+                'refresh_token' => '__refreshed_refresh_token__',
+                'scope' => 'openid profile email scenarios:read',
+                'created_at' => Time.now.to_i,
+                'id_token' => ''
+              }.to_json
+            ]
+          end
 
-        allow(oauth_client).to receive(:get_token)
-          .with({ grant_type: 'refresh_token', refresh_token: '__refresh_token__' }, {})
-          .and_return(new_token)
+          stub.get('oauth/userinfo') do |_env|
+            [
+              200,
+              { 'Content-Type': 'application/json; charset=utf-8' },
+              user_attributes.merge('email' => 'new@example.org').to_json
+            ]
+          end
+        end
 
-        allow(new_token).to receive(:get).with('oauth/userinfo')
-          .and_return(instance_double(
-            OAuth2::Response,
-            parsed: user_attributes.merge('email' => 'new@example.org')
-          ))
+        allow(Identity).to receive(:http_client).and_return(conn)
       end
 
       it 'returns a new session' do
@@ -205,34 +213,6 @@ RSpec.describe Identity::Session do
 
       it 'refreshes the user data' do
         expect(session.user.email).to eq('new@example.org')
-      end
-    end
-
-    context 'when the grant has been revoked' do
-      let(:expires_at) { Time.now - 1 }
-
-      before do
-        allow(oauth_client).to receive(:get_token)
-          .with({ grant_type: 'refresh_token', refresh_token: '__refresh_token__' }, {})
-          .and_raise(OAuth2::Error.new('error' => 'invalid_grant'))
-      end
-
-      it 'raises an InvalidGrant' do
-        expect { session }.to raise_error(Identity::InvalidGrant)
-      end
-    end
-
-    context 'when an OAuth2 error occurs' do
-      let(:expires_at) { Time.now - 1 }
-
-      before do
-        allow(oauth_client).to receive(:get_token)
-          .with({ grant_type: 'refresh_token', refresh_token: '__refresh_token__' }, {})
-          .and_raise(OAuth2::Error.new('error' => 'invalid_request'))
-      end
-
-      it 'raises an Error' do
-        expect { session }.to raise_error(Identity::Error, /invalid_request/)
       end
     end
   end
@@ -250,7 +230,7 @@ RSpec.describe Identity::Session do
     end
 
     let(:access_token) do
-      instance_double(OAuth2::AccessToken, to_hash: { a: 1 })
+      instance_double(Identity::AccessToken, dump: { a: 1 })
     end
 
     let(:session) do

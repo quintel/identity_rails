@@ -3,10 +3,10 @@
 require 'dry-initializer'
 require 'dry-types'
 require 'dry-validation'
-require 'oauth2'
+require 'faraday'
 require 'omniauth'
-require 'omniauth_openid_connect'
 require 'omniauth/rails_csrf_protection'
+require 'omniauth_openid_connect'
 
 # Helpers for interacting with the Identity authentication and authorization service.
 module Identity
@@ -35,38 +35,26 @@ module Identity
   # this when, for example, building production images where the config is not yet available.
   setting :validate_config, default: true
 
-  # Returns the configured OAuth2 client.
+  # Returns a Faraday connection to the Identity service.
   #
-  # @return [OAuth2::Client]
-  def self.oauth_client
-    OpenIDConnect::Client.new(client_options)
+  # @return [Faraday::Connection]
+  def self.http_client(access_token: nil)
+    Faraday.new(url: Identity.config.issuer) do |f|
+      f.request(:json)
+      f.request(:authorization, 'Bearer', access_token) if access_token
+      f.response(:raise_error)
+      f.response(:json)
+    end
   end
 
-  # Creates an OAuth2::AccessToken using the current client and credentials returned by OmniAuth.
-  def self.access_token(credentials)
-    OAuth2::AccessToken.new(
-      Identity.oauth_client,
-      credentials['token'],
-      expires_in: credentials['expires_in'],
-      refresh_token: credentials['refresh_token']
-    )
-  end
-
-  # Returns the OIDC client options.
-  def self.client_options
-    issuer = URI.parse(Identity.config.issuer)
-
-    {
-      port: issuer.port,
-      scheme: issuer.scheme,
-      host: issuer.host,
-      identifier: Identity.config.client_id,
-      secret: Identity.config.client_secret,
-      redirect_uri: "#{Identity.config.client_uri}/auth/identity/callback"
-    }
+  # Returns the OpenID Connect discovery configuration for the Identity service.
+  def self.discovery_config
+    @discovery_config ||=
+      OpenIDConnect::Discovery::Provider::Config.discover!(Identity.config.issuer)
   end
 end
 
+require_relative 'identity/access_token'
 require_relative 'identity/config_validator'
 require_relative 'identity/controller_helpers'
 require_relative 'identity/engine'

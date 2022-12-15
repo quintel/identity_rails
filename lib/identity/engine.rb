@@ -29,6 +29,8 @@ module Identity
       end
 
       app.middleware.use(::OmniAuth::Builder) do
+        issuer = URI.parse(Identity.config.issuer)
+
         provider(
           :openid_connect,
           name: 'identity',
@@ -36,7 +38,14 @@ module Identity
           issuer: Identity.config.issuer,
           response_code: :code,
           scope: Identity.config.scope,
-          client_options: Identity.client_options
+          client_options: {
+            port:         issuer.port,
+            scheme:       issuer.scheme,
+            host:         issuer.host,
+            identifier:   Identity.config.client_id,
+            secret:       Identity.config.client_secret,
+            redirect_uri: "#{Identity.config.client_uri}/auth/identity/callback"
+          }
         )
       end
     end

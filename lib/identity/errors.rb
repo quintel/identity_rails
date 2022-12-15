@@ -1,7 +1,24 @@
 # frozen_string_literal: true
 
 module Identity
-  class Error < RuntimeError; end
+  # General class for all errors in Identity.
+  class Error < RuntimeError
+    # rubocop:disable Naming/MethodParameterName
+    def self.from_faraday(e)
+      type, message =
+        if e.response && e.response[:body].is_a?(Hash)
+          [
+            e.response[:body]['error_type'] == 'invalid_grant' ? InvalidGrant : Error,
+            e.response[:body]['error_description']
+          ]
+        else
+          [self, e.message]
+        end
+
+      raise(type, "Failed to refresh token: #{message}")
+    end
+    # rubocop:enable Naming/MethodParameterName
+  end
 
   # Raised when refreshing a token fails due to the grant being revoked.
   class InvalidGrant < Error; end

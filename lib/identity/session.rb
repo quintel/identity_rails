@@ -11,20 +11,20 @@ module Identity
     class << self
       def serializer
         @serializer ||= Serializer.new(
-          access_token: ->(session) { session.access_token.to_hash },
+          access_token: ->(session) { session.access_token.dump },
           user: ->(session) { session.user.dump },
           issuer: ->(*) { Identity.config.issuer }
         )
       end
 
-      def from_omniauth(token, hash)
+      def from_omniauth(credentials, hash)
         new(
           user: User.from_omniauth_hash(hash),
-          access_token: token
+          access_token: AccessToken.from_omniauth_credentials(credentials)
         )
       end
 
-      def load(oauth_client, hash)
+      def load(hash)
         hash = serializer.loadable_hash(hash)
 
         if Identity.config.issuer != hash[:issuer]
@@ -33,12 +33,12 @@ module Identity
 
         new(
           user: User.load(hash[:user]),
-          access_token: OAuth2::AccessToken.from_hash(oauth_client, hash[:access_token])
+          access_token: AccessToken.load(hash[:access_token])
         )
       end
 
-      def load_fresh(oauth_client, hash)
-        session = load(oauth_client, hash)
+      def load_fresh(hash)
+        session = load(hash)
         session.expired? ? session.refresh : session
       end
     end
@@ -57,11 +57,13 @@ module Identity
     # @return [Session] a new session with the refreshed token
     def refresh
       new_token = @access_token.refresh
-      user_data = new_token.get('oauth/userinfo').parsed
+
+      user_data = Identity
+        .http_client(access_token: new_token.token)
+        .get(Identity.discovery_config.userinfo_endpoint)
+        .body
 
       self.class.new(user: User.load(user_data), access_token: new_token)
-    rescue OAuth2::Error => e
-      raise(e.code == 'invalid_grant' ? InvalidGrant : Error, e.message)
     end
   end
 end
