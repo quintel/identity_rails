@@ -86,6 +86,13 @@ module Identity
       return nil unless identity_session_attributes.present?
 
       @identity_session ||= Identity::Session.load_fresh(identity_session_attributes)
+    rescue StandardError => e
+      reset_session
+
+      # A schema mismatch may occur if we change how we serialize data, and invalid grants can occur
+      # if the user revokes the application's access to their account. Both are recoverable by
+      # signing the user out.
+      raise e unless e.is_a?(Identity::SchemaMismatch) || e.is_a?(Identity::InvalidGrant)
     end
 
     # Remembers the current path so that the user can be redirected back to it after signing in.
