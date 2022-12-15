@@ -8,6 +8,8 @@ module Identity
     option :user
     option :access_token
 
+    delegate :expired?, :expires_soon?, to: :access_token
+
     class << self
       def serializer
         @serializer ||= Serializer.new(
@@ -39,16 +41,12 @@ module Identity
 
       def load_fresh(hash)
         session = load(hash)
-        session.expired? ? session.refresh : session
+        session.expires_soon? ? session.refresh : session
       end
     end
 
     def dump
       self.class.serializer.dump(self)
-    end
-
-    def expired?
-      @access_token.expired?
     end
 
     # Creates a new session with a refreshed token. Also fetches a fresh copy of the user data in

@@ -75,6 +75,14 @@ module Identity
       expires? && expires_at < Time.now.to_i
     end
 
+    # Returns if the access token has expired, or will expire in the next 60 seconds.
+    def expires_soon?
+      return false unless expires?
+      return false unless Identity.config.refresh_token_within
+
+      Time.at(expires_at) < Time.now + Identity.config.refresh_token_within.seconds
+    end
+
     # Returns if the token ever expires.
     def expires?
       !expires_at.nil?

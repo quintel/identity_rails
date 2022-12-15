@@ -13,6 +13,7 @@ module Identity
       required(:client_id).filled(:string)
       required(:client_secret).filled(:string)
       required(:client_uri).filled(:string)
+      optional(:refresh_token_within).filled(:integer).value(gteq?: 0)
     end
 
     rule(:issuer) do

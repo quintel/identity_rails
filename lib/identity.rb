@@ -35,6 +35,10 @@ module Identity
   # this when, for example, building production images where the config is not yet available.
   setting :validate_config, default: true
 
+  # The number of seconds before the access token expires that it should be refreshed. Set to nil
+  # to only refresh tokens when they have expired.
+  setting :refresh_token_within, default: 1.minute
+
   # Returns a Faraday connection to the Identity service.
   #
   # @return [Faraday::Connection]

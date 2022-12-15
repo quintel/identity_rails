@@ -43,7 +43,7 @@ RSpec.describe Identity::AccessToken do
     end
   end
 
-  context 'when the expiry is in the future' do
+  context 'when the expiry is in 10 seconds' do
     let(:token) do
       described_class.new(**token_attributes.merge(expires_at: Time.now.to_i + 10))
     end
@@ -54,6 +54,49 @@ RSpec.describe Identity::AccessToken do
 
     it 'expires' do
       expect(token.expires?).to be(true)
+    end
+
+    it 'will expire soon' do
+      expect(token.expires_soon?).to be(true)
+    end
+  end
+
+  context 'when the expiry is in 10 seconds and refresh_token_within is nil' do
+    let(:token) do
+      described_class.new(**token_attributes.merge(expires_at: Time.now.to_i + 10))
+    end
+
+    before { Identity.config.refresh_token_within = nil }
+    after { Identity.config.refresh_token_within = 1.minute }
+
+    it 'returns false' do
+      expect(token).not_to be_expired
+    end
+
+    it 'expires' do
+      expect(token.expires?).to be(true)
+    end
+
+    it 'will not expire soon' do
+      expect(token.expires_soon?).to be(false)
+    end
+  end
+
+  context 'when the expiry is in 90 seconds' do
+    let(:token) do
+      described_class.new(**token_attributes.merge(expires_at: Time.now.to_i + 90))
+    end
+
+    it 'returns false' do
+      expect(token).not_to be_expired
+    end
+
+    it 'expires' do
+      expect(token.expires?).to be(true)
+    end
+
+    it 'will not expire soon' do
+      expect(token.expires_soon?).to be(false)
     end
   end
 
@@ -69,6 +112,10 @@ RSpec.describe Identity::AccessToken do
     it 'expires' do
       expect(token.expires?).to be(true)
     end
+
+    it 'will expire soon' do
+      expect(token.expires_soon?).to be(true)
+    end
   end
 
   context 'when no expiry is set' do
@@ -82,6 +129,10 @@ RSpec.describe Identity::AccessToken do
 
     it 'does not expire' do
       expect(token.expires?).to be(false)
+    end
+
+    it 'does not expire soon' do
+      expect(token.expires_soon?).to be(false)
     end
   end
 

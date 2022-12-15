@@ -8,7 +8,8 @@ RSpec.describe Identity::ConfigValidator do
       issuer: 'https://issuer',
       client_id: 'client_id_123',
       client_secret: 'client_secret_123',
-      client_uri: 'https://client'
+      client_uri: 'https://client',
+      refresh_token_within: 60
     }
   end
 
@@ -121,11 +122,41 @@ RSpec.describe Identity::ConfigValidator do
       expect { described_class.validate!(valid_config.to_h) }.not_to raise_error
     end
 
-    it 'raises an error when the config is invalid' do
+    it 'raises an error when the issuer is invalid' do
       config = valid_config.merge(issuer: '')
 
       expect { described_class.validate!(config.to_h) }
         .to raise_error(Identity::InvalidConfig, /- issuer must be filled/)
+    end
+
+    it 'raises an error when the refresh_token_within is nil' do
+      config = valid_config.merge(refresh_token_within: nil)
+
+      expect { described_class.validate!(config.to_h) }
+        .to raise_error(Identity::InvalidConfig, /- refresh_token_within must be filled/)
+    end
+
+    it 'raises an error when the refresh_token_within a negative number' do
+      config = valid_config.merge(refresh_token_within: -1)
+
+      expect { described_class.validate!(config.to_h) }.to raise_error(
+        Identity::InvalidConfig,
+        /- refresh_token_within must be greater than or equal to 0/
+      )
+    end
+
+    it 'raises no error when the refresh_token_within is a positive duration' do
+      config = valid_config.merge(refresh_token_within: 1.minute)
+      expect { described_class.validate!(config.to_h) }.not_to raise_error
+    end
+
+    it 'raises an error when the refresh_token_within is a negative duration' do
+      config = valid_config.merge(refresh_token_within: -1.minute)
+
+      expect { described_class.validate!(config.to_h) }.to raise_error(
+        Identity::InvalidConfig,
+        /- refresh_token_within must be greater than or equal to 0/
+      )
     end
   end
 end
