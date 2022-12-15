@@ -90,7 +90,7 @@ RSpec.describe Identity::AccessToken do
       described_class.from_omniauth_credentials({
         'token' => '__access_token__',
         'refresh_token' => '__refresh_token__',
-        'expires_at' => 123
+        'expires_in' => 123
       })
     end
 
@@ -103,7 +103,7 @@ RSpec.describe Identity::AccessToken do
     end
 
     it 'sets the expires_at' do
-      expect(token.expires_at).to eq(123)
+      expect(token.expires_at).to be_within(2).of(Time.now.to_i + 123)
     end
 
     it 'sets the created_at' do

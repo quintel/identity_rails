@@ -32,17 +32,20 @@ module Identity
 
       # Public: Creates a token from the credentials returned by OmniAuth.
       def from_omniauth_credentials(credentials)
+        created_at = credentials['created_at'] || Time.now.to_i
+        expires_at = credentials['expires_in'] ? created_at + credentials['expires_in'] : nil
+
         new(
           token: credentials['token'],
           refresh_token: credentials['refresh_token'],
-          expires_at: credentials['expires_at'],
-          created_at: credentials['created_at'] || Time.now.to_i,
+          expires_at: expires_at,
+          created_at: created_at
         )
       end
     end
 
     def http_client(**kwargs)
-      Identity.http_client(access_token: self.token, **kwargs)
+      Identity.http_client(access_token: token, **kwargs)
     end
 
     # Creates a new access token using the refresh token.
