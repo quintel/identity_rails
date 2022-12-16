@@ -7,6 +7,7 @@ module Identity
 
     included do
       helper_method :identity_user
+      helper_method :identity_access_token
       helper_method :signed_in?
 
       helper_method :sign_up_url
@@ -60,6 +61,10 @@ module Identity
 
     def identity_user
       identity_session&.user
+    end
+
+    def identity_access_token
+      identity_session&.access_token
     end
 
     # Routes
