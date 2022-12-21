@@ -16,6 +16,9 @@ module Identity
         mock_omniauth_sign_in(roles: %w[user admin], **kwargs)
       end
 
+      # Public: Instructs OmniAuth to provide a fake authentication response to sign in a user.
+      #
+      # Returns the AccessToken which represents the user's session.
       def mock_omniauth_sign_in(
         id: SecureRandom.random_number(1e10.to_i),
         name: 'John Doe',
@@ -26,6 +29,9 @@ module Identity
         OmniAuth.config.test_mode = true
         OmniAuth.config.logger = Rails.logger
 
+        token = "test_access_#{SecureRandom.base58(16)}"
+        refresh_token = "test_refresh_#{SecureRandom.base58(16)}"
+
         OmniAuth.config.mock_auth[:identity] = OmniAuth::AuthHash.new(
           'provider' => 'identity',
           'uid' => id,
@@ -34,8 +40,8 @@ module Identity
             'nickname' => nil
           },
           'credentials' => {
-            'token' => "test_access_#{SecureRandom.base58(16)}",
-            'refresh_token' => "test_refresh_#{SecureRandom.base58(16)}",
+            'token' => token,
+            'refresh_token' => refresh_token,
             'expires_at' => expires_at.to_i,
             'expires' => true
           },
@@ -47,6 +53,13 @@ module Identity
               'name' => name
             }
           }
+        )
+
+        Identity::AccessToken.new(
+          token: token,
+          refresh_token: refresh_token,
+          expires_at: expires_at.to_i,
+          created_at: Time.now.to_i
         )
       end
     end
