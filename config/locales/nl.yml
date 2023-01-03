@@ -3,18 +3,18 @@ nl:
   identity:
     auth:
       failure:
-        title: Signing in to your account failed
-        description: Please sign in to your account to continue.
+        title: Het inloggen is helaas mislukt
+        description: Log alsjeblieft in om door te gaan.
         denied: |
-          You denied the request to give this application access to your account. You are not signed
-          in but may try again at any time.
+          Je hebt deze applicatie geen toegang gegeven tot je account. Je bent niet ingelogd, 
+          maar je kunt dit op elk moment opnieuw proberen.
       not_authorized:
-        description: The page you were looking for was not found.
-        sign_in: If you were expecting something to be here, please sign in to your account.
-        title: Page not found
+        description: De pagina die je zocht is niet gevonden.
+        sign_in: Als je had verwacht hier iets te zien, log dan eerst in.
+        title: Pagina niet gevonden
       sign_in:
-        title: Please sign in
-        description: The page you wanted to view requires that you first sign in to your account.
-    go_back: Go back
-    sign_in: Sign in
-    sign_out: Sign out
+        title: Log in
+        description: De pagina die je wilt bekijken vereist dat je bent ingelogd.
+    go_back: Ga terug
+    sign_in: Inloggen
+    sign_out: Uitloggen
