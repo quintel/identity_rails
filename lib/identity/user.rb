@@ -24,7 +24,7 @@ module Identity
       def from_omniauth_hash(hash)
         new(
           id: hash['sub'],
-          roles: hash['roles'].to_a,
+          roles: hash.fetch('roles' || []).to_a,
           email: hash['email'],
           name: hash['name']
         )
