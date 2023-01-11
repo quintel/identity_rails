@@ -104,7 +104,11 @@ module Identity
       # A schema mismatch may occur if we change how we serialize data, and invalid grants can occur
       # if the user revokes the application's access to their account. Both are recoverable by
       # signing the user out.
-      raise e unless e.is_a?(Identity::SchemaMismatch) || e.is_a?(Identity::InvalidGrant)
+      unless e.is_a?(Identity::SchemaMismatch) ||
+          e.is_a?(Identity::IssuerMismatch) ||
+          e.is_a?(Identity::InvalidGrant)
+        raise e
+      end
     end
 
     # Remembers the current path so that the user can be redirected back to it after signing in.
