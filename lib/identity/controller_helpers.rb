@@ -97,7 +97,16 @@ module Identity
       @identity_session = id_session
     rescue StandardError => e
       Rails.logger.error(e.message)
-      Sentry.capture_exception(e) if defined?(Sentry)
+
+      if defined?(Sentry)
+        Sentry.with_scope do |scope|
+          if e.is_a?(Identity::InvalidGrant)
+            scope.set_extra('identity_session_attributes', identity_session_attributes.to_json)
+          end
+
+          Sentry.capture_exception(e)
+        end
+      end
 
       reset_session
 
