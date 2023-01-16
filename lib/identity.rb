@@ -31,6 +31,11 @@ module Identity
   # A proc to call after a successful sign-in. The proc will be passed the Identity::Session object.
   setting :on_sign_in
 
+  # A proc called if an Identity::InvalidGrant error is raised when attempting to refresh the user's
+  # access token. If no proc is specified, the session will be destroyed and the user signed out.
+  # The proc will receive the controller instance and exception.
+  setting :on_invalid_grant
+
   # Sets whether to validate the config when mounting the Rails engine. It's useful to disabling
   # this when, for example, building production images where the config is not yet available.
   setting :validate_config, default: true

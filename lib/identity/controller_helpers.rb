@@ -95,29 +95,25 @@ module Identity
       session[IDENTITY_SESSION_KEY] = id_session.dump if refreshed
 
       @identity_session = id_session
-    rescue StandardError => e
+    rescue Identity::InvalidGrant => e
       Rails.logger.error(e.message)
 
-      if defined?(Sentry)
-        Sentry.with_scope do |scope|
-          if e.is_a?(Identity::InvalidGrant)
-            scope.set_extra('identity_session_attributes', identity_session_attributes.to_json)
-          end
-
-          Sentry.capture_exception(e)
-        end
+      if Identity.config.on_invalid_grant
+        Identity.config.on_invalid_grant.call(self, e)
+      else
+        reset_session
+        nil
       end
+    rescue StandardError => e
+      Rails.logger.error(e.message)
+      Sentry.capture_exception(e) if defined?(Sentry)
 
       reset_session
 
-      # A schema mismatch may occur if we change how we serialize data, and invalid grants can occur
-      # if the user revokes the application's access to their account. Both are recoverable by
+      # A schema mismatch may occur if we change how we serialize data, and an issuer mismatch will
+      # happen when running locally and changing which ETEngine is used. Both are recoverable by
       # signing the user out.
-      unless e.is_a?(Identity::SchemaMismatch) ||
-          e.is_a?(Identity::IssuerMismatch) ||
-          e.is_a?(Identity::InvalidGrant)
-        raise e
-      end
+      raise e unless e.is_a?(Identity::SchemaMismatch) || e.is_a?(Identity::IssuerMismatch)
     end
 
     # Remembers the current path so that the user can be redirected back to it after signing in.
