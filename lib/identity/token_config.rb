@@ -15,6 +15,13 @@ module Identity
         @sister_token_config ||= Identity.config.sisters.map { |t| t.transform_keys(&:to_sym) }
       end
 
+      # Returns an array of token configs, of token names that not have been registered
+      # in the session
+      def unregistered_tokens_for(session)
+        missing_names = TokenConfig.names - session.tokens.map(&:name)
+        sister_token_config.select { |config| missing_names.includes?(config[:name]) }
+      end
+
       # Takes a hash from the saved session and returns an array of
       # sister tokens for the session
       def load_sister_tokens(hash)

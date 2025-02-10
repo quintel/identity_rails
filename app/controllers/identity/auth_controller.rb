@@ -8,11 +8,16 @@ module Identity
     def callback
       id_session = Identity::Session.from_omniauth(
         request.env['omniauth.auth']['credentials'],
-        request.env['omniauth.auth']['extra']['raw_info']
+        request.env['omniauth.auth']['extra']['raw_info'],
+        initiated_session_hash: initiated_session_attributes || {}
       )
 
-      rotate_session
+      # Only rotate if this is the first of the sisters to start a session.
+      rotate_session unless initiated_session_attributes
+
       session[IDENTITY_SESSION_KEY] = id_session.dump
+
+      id_session.signal_sister_set_up unless initiated_session_attributes
 
       Identity.config.on_sign_in&.call(id_session)
 
@@ -49,6 +54,10 @@ module Identity
       uri.query = { access_token: identity_session.access_token.token }.to_query
 
       uri.to_s
+    end
+
+    def initiated_session_attributes
+      session[IDENTITY_SESSION_KEY]
     end
   end
 end

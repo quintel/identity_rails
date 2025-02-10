@@ -20,12 +20,17 @@ module Identity
         )
       end
 
-      def from_omniauth(credentials, hash, sister_tokens: [])
+      def from_omniauth(credentials, hash, initiated_session_hash: {})
+        if initiated_session_hash.present?
+          initiated_session_hash = serializer.loadable_hash(initiated_session_hash)
+        end
+
         new(
           user: User.from_omniauth_hash(hash),
           access_token: TokenConfig.load_from_omniauth_credentials(credentials),
-          # TODO: sister token have to arrive here in some way
-          sister_tokens: sister_tokens
+          sister_tokens: TokenConfig.load_sister_tokens(
+            initiated_session_hash.fetch(:access_tokens, {})
+          )
         )
       end
 
@@ -82,6 +87,13 @@ module Identity
         access_token: new_token,
         sister_access_token: @sister_access_token
       )
+    end
+
+    # Signals sisters that have not yet registred their tokens to set up as well
+    def signal_sister_set_up
+      TokenConfig.unregistered_tokens_for(self).each do |token_config|
+        Identity.http_client(uri: token_config[:uri]).post('auth/identity')
+      end
     end
   end
 end

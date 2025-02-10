@@ -88,8 +88,8 @@ module Identity
     private
 
     def identity_session
-      # TODO: This is checked on post sign in Let it 'pass' in a safe way when access token was not
-      # set yet so we can continue the callback and set the missing tokens
+      # TODO: This is checked on POST sign in (?) Let it 'pass' in a safe way when access token was not
+      # set yet so we can continue to the callback and set the missing tokens
       # This means the attributes are there, but not complete!
       return nil unless identity_session_attributes.present?
       return @identity_session if @identity_session
