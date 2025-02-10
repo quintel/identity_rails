@@ -44,11 +44,18 @@ module Identity
   # to only refresh tokens when they have expired.
   setting :refresh_token_within, default: 1.minute
 
+  # The name under which to find the access token in the session in case of sister
+  # clients
+  setting :client_name, default: 'default'
+
+  # An array of settings for sister clients to be set up
+  setting :sisters, default: []
+
   # Returns a Faraday connection to the Identity service.
   #
   # @return [Faraday::Connection]
-  def self.http_client(access_token: nil)
-    Faraday.new(url: Identity.config.issuer) do |f|
+  def self.http_client(access_token: nil, uri: Identity.config.issuer)
+    Faraday.new(url: uri) do |f|
       f.request(:json)
       f.request(:authorization, 'Bearer', access_token) if access_token
       f.response(:raise_error)
@@ -70,6 +77,7 @@ require_relative 'identity/engine'
 require_relative 'identity/errors'
 require_relative 'identity/serializer'
 require_relative 'identity/session'
+require_relative 'identity/token_config'
 require_relative 'identity/user'
 require_relative 'identity/version'
 

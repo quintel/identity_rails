@@ -15,6 +15,7 @@ module Identity
       hash = hash.transform_keys(&:to_sym)
       given_keys = Set.new(hash.keys)
 
+      # TODO: validate issuer is still the same after load (sister did not change it)
       raise SchemaMismatch.new(@keys, given_keys) if @keys != given_keys
 
       hash.slice(*@schema.keys)

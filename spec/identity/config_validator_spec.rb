@@ -117,6 +117,42 @@ RSpec.describe Identity::ConfigValidator do
     end
   end
 
+  describe 'with a sister application' do
+    let(:sisters) do
+      {
+        sisters: [
+          {
+            name: 'etsomething',
+            uri: sister_uri
+          }
+        ]
+      }
+    end
+
+    let(:sister_uri) { 'https://sister' }
+    let(:config) { valid_config.merge(sisters) }
+
+    context 'with a valid config' do
+      it 'is a success' do
+        expect(result).to be_success
+      end
+    end
+
+    context 'with an incomplete uri' do
+      let(:sister_uri) { 'sister' }
+
+      it 'is a failure' do
+        expect(result).to be_failure
+      end
+
+      it 'has an error on sisters uri' do
+        expect(result.errors[:sisters][:uri][0]).to(
+          include('must have a http:// or https:// scheme')
+        )
+      end
+    end
+  end
+
   describe '.validate!' do
     it 'raises no error when the config is valid' do
       expect { described_class.validate!(valid_config.to_h) }.not_to raise_error

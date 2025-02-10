@@ -10,6 +10,11 @@ module Identity
     option :expires_at,    Dry::Types['optional.integer']
     option :created_at,    Dry::Types['strict.integer']
 
+    # Unserialised
+    option :uri,           Dry::Types['strict.string'], default: proc { Identity.config.issuer }
+    option :name,          Dry::Types['strict.string'], default: proc { '' }
+    option :refreshable,   Dry::Types['strict.bool'], default: proc { false }
+
     class << self
       def serializer
         @serializer ||= Serializer.new(
@@ -24,14 +29,14 @@ module Identity
       #
       # Raises a SchemaMismatch error if the schema version of the hash does not match the current
       # schema, or a KeyError if the hash is missing a required key.
-      def load(hash)
-        new(**serializer.loadable_hash(hash))
+      def load(hash, **kwargs)
+        new(**serializer.loadable_hash(hash), **kwargs)
       rescue Dry::Types::ConstraintError => e
         raise Error, e.message
       end
 
       # Public: Creates a token from the credentials returned by OmniAuth.
-      def from_omniauth_credentials(credentials)
+      def from_omniauth_credentials(credentials, **kwargs)
         created_at = credentials['created_at'] || Time.now.to_i
         expires_at = credentials['expires_in'] ? created_at + credentials['expires_in'] : nil
 
@@ -39,12 +44,14 @@ module Identity
           token: credentials['token'],
           refresh_token: credentials['refresh_token'],
           expires_at: expires_at,
-          created_at: created_at
+          created_at: created_at,
+          **kwargs
         )
       end
     end
 
     def http_client(**kwargs)
+      kwargs[:uri] = @uri if @uri.present?
       Identity.http_client(access_token: token, **kwargs)
     end
 
@@ -78,6 +85,7 @@ module Identity
 
     # Returns if the access token has expired, or will expire in the next 60 seconds.
     def expires_soon?
+      return false unless refreshable
       return false unless expires?
       return false unless Identity.config.refresh_token_within
 

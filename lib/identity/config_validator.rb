@@ -13,10 +13,26 @@ module Identity
       required(:client_id).filled(:string)
       required(:client_secret).filled(:string)
       required(:client_uri).filled(:string)
+      optional(:client_name).value(:string)
       optional(:refresh_token_within).filled(:integer).value(gteq?: 0)
+
+      optional(:sisters).value(:array).each do
+        hash do
+          required(:name).filled(:string)
+          required(:uri).filled(:string)
+        end
+      end
     end
 
     rule(:issuer) do
+      ConfigValidator.valid_uri!(value, key)
+    end
+
+    rule(:sisters).each do |index:|
+      ConfigValidator.valid_uri!(value[:uri], key([:sisters, :uri, index]))
+    end
+
+    def self.valid_uri!(value, key)
       uri = URI.parse(value)
 
       key.failure('must have a http:// or https:// scheme') if uri.scheme.nil?

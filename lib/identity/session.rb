@@ -7,22 +7,25 @@ module Identity
 
     option :user
     option :access_token
+    option :sister_tokens, optional: true, default: proc { [] }
 
     delegate :expired?, :expires_soon?, to: :access_token
 
     class << self
       def serializer
         @serializer ||= Serializer.new(
-          access_token: ->(session) { session.access_token.dump },
+          access_tokens: ->(session) { TokenConfig.dump_tokens(session) },
           user: ->(session) { session.user.dump },
           issuer: ->(*) { Identity.config.issuer }
         )
       end
 
-      def from_omniauth(credentials, hash)
+      def from_omniauth(credentials, hash, sister_tokens: [])
         new(
           user: User.from_omniauth_hash(hash),
-          access_token: AccessToken.from_omniauth_credentials(credentials)
+          access_token: TokenConfig.load_from_omniauth_credentials(credentials),
+          # TODO: sister token have to arrive here in some way
+          sister_tokens: sister_tokens
         )
       end
 
@@ -35,7 +38,8 @@ module Identity
 
         new(
           user: User.load(hash[:user]),
-          access_token: AccessToken.load(hash[:access_token])
+          access_token: TokenConfig.load_access_token(hash[:access_tokens]),
+          sister_tokens: TokenConfig.load_sister_tokens(hash[:access_tokens])
         )
       end
 
@@ -47,6 +51,14 @@ module Identity
         session = load(hash)
         session.expires_soon? ? [session.refresh, true] : [session, false]
       end
+    end
+
+    def sister_token_for(name)
+      @sister_tokens.find { |token| token.name == name }
+    end
+
+    def tokens
+      [@access_token] + @sister_tokens
     end
 
     def dump
@@ -65,7 +77,11 @@ module Identity
         .get(Identity.discovery_config.userinfo_endpoint)
         .body
 
-      self.class.new(user: User.from_omniauth_hash(user_data), access_token: new_token)
+      self.class.new(
+        user: User.from_omniauth_hash(user_data),
+        access_token: new_token,
+        sister_access_token: @sister_access_token
+      )
     end
   end
 end

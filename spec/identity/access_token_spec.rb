@@ -8,7 +8,7 @@ RSpec.describe Identity::AccessToken do
   describe '.load' do
     context 'when given a token, refresh, and expires_at' do
       let(:token) do
-        described_class.load(**token_attributes)
+        described_class.load(token_attributes)
       end
 
       it 'sets the token' do
@@ -30,7 +30,10 @@ RSpec.describe Identity::AccessToken do
 
     context 'when given refresh and expires_at of nil' do
       let(:token) do
-        described_class.load(**token_attributes.merge(refresh_token: nil, expires_at: nil))
+        described_class.load(
+          token_attributes.merge(refresh_token: nil, expires_at: nil),
+          refreshable: true
+        )
       end
 
       it 'sets the refresh token to be nil' do
@@ -45,7 +48,10 @@ RSpec.describe Identity::AccessToken do
 
   context 'when the expiry is in 10 seconds' do
     let(:token) do
-      described_class.new(**token_attributes.merge(expires_at: Time.now.to_i + 10))
+      described_class.new(
+        **token_attributes.merge(expires_at: Time.now.to_i + 10),
+        refreshable: true
+      )
     end
 
     it 'returns false' do
@@ -102,7 +108,10 @@ RSpec.describe Identity::AccessToken do
 
   context 'when the expiry is in the past' do
     let(:token) do
-      described_class.new(**token_attributes.merge(expires_at: Time.now.to_i - 10))
+      described_class.new(
+        **token_attributes.merge(expires_at: Time.now.to_i - 10),
+        refreshable: true
+      )
     end
 
     it 'returns true' do
@@ -167,7 +176,22 @@ RSpec.describe Identity::AccessToken do
       allow(Identity).to receive(:http_client)
       described_class.new(**token_attributes.merge(refresh_token: nil)).http_client
 
-      expect(Identity).to have_received(:http_client).with(access_token: 'abc')
+      expect(Identity).to have_received(:http_client).with(
+        access_token: 'abc', uri: Identity.config.issuer
+      )
+    end
+
+    context 'when URI is set' do
+      it 'creates a client with the token' do
+        allow(Identity).to receive(:http_client)
+        described_class.new(
+          **token_attributes.merge(refresh_token: nil, uri: 'https://sister')
+        ).http_client
+
+        expect(Identity).to have_received(:http_client).with(
+          access_token: 'abc', uri: 'https://sister'
+        )
+      end
     end
   end
 

@@ -55,7 +55,7 @@ RSpec.describe Identity::Session do
       let(:session) do
         described_class.load(
           user: user_attributes,
-          access_token: token_attributes,
+          access_tokens: { Identity.config.client_name => token_attributes },
           issuer: Identity.config.issuer
         )
       end
@@ -73,13 +73,13 @@ RSpec.describe Identity::Session do
       it 'raises an error'  do
         expect do
           described_class.load(
-            access_token: token_attributes,
+            access_tokens: { Identity.config.client_name => token_attributes },
             issuer: Identity.config.issuer
           )
         end
           .to raise_error(
             Identity::SchemaMismatch,
-            /expected {access_token, issuer, user}, got {access_token, issuer}/
+            /expected {access_tokens, issuer, user}, got {access_tokens, issuer}/
           )
       end
     end
@@ -91,7 +91,7 @@ RSpec.describe Identity::Session do
         end
           .to raise_error(
             Identity::SchemaMismatch,
-            /expected {access_token, issuer, user}, got {issuer, user}/
+            /expected {access_tokens, issuer, user}, got {issuer, user}/
           )
       end
     end
@@ -99,11 +99,14 @@ RSpec.describe Identity::Session do
     context 'with a missing issuer' do
       it 'raises an error'  do
         expect do
-          described_class.load(user: user_attributes, access_token: token_attributes)
+          described_class.load(
+            user: user_attributes,
+            access_tokens: { Identity.config.client_name => token_attributes }
+          )
         end
           .to raise_error(
             Identity::SchemaMismatch,
-            /expected {access_token, issuer, user}, got {access_token, user}/
+            /expected {access_tokens, issuer, user}, got {access_tokens, user}/
           )
       end
     end
@@ -113,7 +116,7 @@ RSpec.describe Identity::Session do
         expect do
           described_class.load(
             user: user_attributes,
-            access_token: token_attributes,
+            access_tokens: { Identity.config.client_name => token_attributes },
             issuer: 'nope'
           )
         end
@@ -138,18 +141,18 @@ RSpec.describe Identity::Session do
     end
 
     let(:token_attributes) do
-      {
+      { Identity.config.client_name => {
         'token' => '__access_token__',
         'refresh_token' => '__refresh_token__',
         'created_at' => Time.now.to_i,
         'expires_at' => expires_at.to_i
-      }
+      }}
     end
 
     let(:result) do
       described_class.load_fresh(
         user: user_attributes,
-        access_token: token_attributes,
+        access_tokens: token_attributes,
         issuer: Identity.config.issuer
       )
     end
@@ -247,7 +250,11 @@ RSpec.describe Identity::Session do
     end
 
     let(:access_token) do
-      instance_double(Identity::AccessToken, dump: { a: 1 })
+      instance_double(
+        Identity::AccessToken,
+        dump: { a: 1 },
+        name: Identity.config.client_name
+      )
     end
 
     let(:session) do
@@ -255,7 +262,7 @@ RSpec.describe Identity::Session do
     end
 
     it 'dumps the access token' do
-      expect(session.dump[:access_token]).to eq(a: 1)
+      expect(session.dump[:access_tokens]).to eq(Identity.config.client_name => { a: 1 })
     end
 
     it 'dumps the user' do
