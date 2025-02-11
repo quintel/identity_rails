@@ -14,6 +14,7 @@ module Identity
       required(:client_secret).filled(:string)
       required(:client_uri).filled(:string)
       optional(:refresh_token_within).filled(:integer).value(gteq?: 0)
+      optional(:resource_uri).value(:string)
     end
 
     rule(:issuer) do
@@ -23,6 +24,16 @@ module Identity
       key.failure('must not have a path') unless uri.path.empty?
       key.failure('must not have a query') unless uri.query.nil?
       key.failure('must not have a fragment') unless uri.fragment.nil?
+    rescue URI::InvalidURIError
+      key.failure('must be a valid URI')
+    end
+
+    rule(:resource_uri) do
+      unless value.blank?
+        uri = URI.parse(value)
+
+        key.failure('must have a http:// or https:// scheme') if uri.scheme.nil?
+      end
     rescue URI::InvalidURIError
       key.failure('must be a valid URI')
     end

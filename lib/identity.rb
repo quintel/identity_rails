@@ -25,6 +25,9 @@ module Identity
   # URL for the Identity service.
   setting :client_uri
 
+  # Optional URL (protocol and hostname) for the resource server to connect to
+  setting :resource_uri
+
   # The scopes to request when authenticating.
   setting :scope, default: 'public'
 
@@ -44,11 +47,17 @@ module Identity
   # to only refresh tokens when they have expired.
   setting :refresh_token_within, default: 1.minute
 
-  # Returns a Faraday connection to the Identity service.
+  # Returns a Faraday connection to the Identity service, or the resource server.
   #
   # @return [Faraday::Connection]
-  def self.http_client(access_token: nil)
-    Faraday.new(url: Identity.config.issuer) do |f|
+  def self.http_client(access_token: nil, resource: false)
+    uri = if resource && Identity.config.resource_uri.present?
+      Identity.config.resource_uri
+    else
+      Identity.config.issuer
+    end
+
+    Faraday.new(url: uri) do |f|
       f.request(:json)
       f.request(:authorization, 'Bearer', access_token) if access_token
       f.response(:raise_error)
