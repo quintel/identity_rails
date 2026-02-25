@@ -14,14 +14,18 @@ gem 'rspec-rails'
 
 gem 'pry-rails'
 
-gem 'rubocop'
-gem 'rubocop-performance'
-gem 'rubocop-rails'
-gem 'rubocop-rspec'
+group :development do
+  gem 'rubocop'
+  gem 'rubocop-performance'
+  gem 'rubocop-rails'
+  gem 'rubocop-rspec'
+end
 
 gem 'capybara'
 gem 'selenium-webdriver'
 gem 'webdrivers'
+gem 'mutex_m'
+gem 'ostruct'
 
 # Start debugger with binding.b [https://github.com/ruby/debug]
 # gem 'debug', '>= 1.0.0'

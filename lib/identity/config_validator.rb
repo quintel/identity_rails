@@ -14,7 +14,7 @@ module Identity
       required(:client_secret).filled(:string)
       required(:client_uri).filled(:string)
       optional(:refresh_token_within).filled(:integer).value(gteq?: 0)
-      optional(:resource_uri).value(:string)
+      optional(:resource_uri).maybe(:string)
     end
 
     rule(:issuer) do
