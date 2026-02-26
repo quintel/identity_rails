@@ -11,6 +11,7 @@ gem 'sqlite3'
 gem 'sprockets-rails'
 
 gem 'rspec-rails'
+gem 'simplecov', require: false
 
 gem 'pry-rails'
 
