@@ -236,16 +236,15 @@ RSpec.describe Identity::AccessToken do
       let(:token) { described_class.new(**token_attributes) }
 
       before do
-        response = instance_double(Faraday::Response)
-        allow(response).to receive(:[]).with(:body).and_return(
-          {
+        response = {
+          body: {
             'error' => 'invalid_grant',
             'error_description' =>
               'The provided authorization grant is invalid, expired, revoked, does not ' \
               'match the redirection URI used in the authorization request, or was issued ' \
               'to another client.'
           }
-        )
+        }
 
         conn = Faraday.new do |builder|
           builder.request(:json)
