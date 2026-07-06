@@ -15,7 +15,8 @@ module Identity
           name: 'identity',
           discovery: true,
           issuer: Identity.config.issuer,
-          response_code: :code,
+          response_type: :code,
+          allow_authorize_params: %i[id_token_hint login_hint],
           scope: Identity.config.scope,
           client_options: {
             port:         issuer.port,

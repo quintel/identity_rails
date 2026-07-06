@@ -5,21 +5,18 @@ module Identity
   class AuthController < ApplicationController
     def sign_in; end
 
+    # By the time this fires, the shared JWT session cookie is already set: the provider (MyETM)
+    # sets it during its own login step, earlier in this same top-level navigation, on the same
+    # parent domain. All that's left to do here is rotate the session (fixation hygiene) and return
+    # the visitor to where they were headed.
     def callback
-      id_session = Identity::Session.from_omniauth(
-        request.env['omniauth.auth']['credentials'],
-        request.env['omniauth.auth']['extra']['raw_info']
-      )
-
       rotate_session
-      session[IDENTITY_SESSION_KEY] = id_session.dump
-
-      Identity.config.on_sign_in&.call(id_session)
-
       redirect_to(return_to_path(main_app.root_path))
     end
 
-    def failure; end
+    def failure
+      # A real OAuth error (e.g. the user denied the request): render the failure page.
+    end
 
     def sign_out
       return redirect_to(main_app.root_path) unless signed_in?
@@ -44,9 +41,13 @@ module Identity
       prev_session.each { |key, value| session[key.to_sym] = value }
     end
 
+    # Builds an RP-initiated logout URL. Passes the client id and a post-logout redirect
     def logout_url
       uri = URI.parse(Identity.discovery_config.end_session_endpoint)
-      uri.query = { access_token: identity_session.access_token.token }.to_query
+      uri.query = {
+        client_id: Identity.config.client_id,
+        post_logout_redirect_uri: "#{Identity.config.client_uri}/"
+      }.to_query
 
       uri.to_s
     end
