@@ -3,6 +3,17 @@
 RSpec.describe 'Auth', type: :request do
   after { Identity.reset_config }
 
+  describe 'GET /auth/failure' do
+    context 'with a real OAuth error' do
+      it 'renders the failure page' do
+        get '/auth/failure', params: { error: 'server_error' }
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).not_to be_empty
+      end
+    end
+  end
+
   describe 'POST /auth/logout' do
     context 'when not signed in' do
       it 'redirects to the root page' do
@@ -27,14 +38,15 @@ RSpec.describe 'Auth', type: :request do
         expect(response.location).to start_with("#{Identity.config.issuer}/identity/sign_out")
       end
 
-      it 'includes the access token in the redirect query string' do
+      it 'builds an RP-initiated logout URL with the client id and no access token' do
         post '/auth/sign_out'
 
         uri = URI.parse(response.location)
         query = Rack::Utils.parse_nested_query(CGI.unescape(uri.query))
 
         expect(query).to eq(
-          'access_token' => OmniAuth.config.mock_auth[:identity]['credentials']['token']
+          'client_id' => Identity.config.client_id,
+          'post_logout_redirect_uri' => "#{Identity.config.client_uri}/"
         )
       end
     end

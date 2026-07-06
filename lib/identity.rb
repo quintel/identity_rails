@@ -31,21 +31,14 @@ module Identity
   # The scopes to request when authenticating.
   setting :scope, default: 'public'
 
-  # A proc to call after a successful sign-in. The proc will be passed the Identity::Session object.
-  setting :on_sign_in
-
-  # A proc called if an Identity::InvalidGrant error is raised when attempting to refresh the user's
-  # access token. If no proc is specified, the session will be destroyed and the user signed out.
-  # The proc will receive the controller instance and exception.
-  setting :on_invalid_grant
-
   # Sets whether to validate the config when mounting the Rails engine. It's useful to disabling
   # this when, for example, building production images where the config is not yet available.
   setting :validate_config, default: true
 
-  # The number of seconds before the access token expires that it should be refreshed. Set to nil
-  # to only refresh tokens when they have expired.
-  setting :refresh_token_within, default: 1.minute
+  # Name of the parent-domain JWT session cookie. The provider (MyETM) mints it on login and every
+  # ETM app reads it as the browser session: a self-contained identity JWT, verified locally by
+  # TokenDecoder. Auto-sent same-site to ETEngine, it unifies browser-session and API-bearer auth.
+  setting :session_cookie_name, default: 'etm_session'
 
   # Returns a Faraday connection to the Identity service, or the resource server.
   #
@@ -72,13 +65,12 @@ module Identity
   end
 end
 
-require_relative 'identity/access_token'
+require_relative 'identity/errors'
 require_relative 'identity/config_validator'
+require_relative 'identity/resource_server'
+require_relative 'identity/token_decoder'
 require_relative 'identity/controller_helpers'
 require_relative 'identity/engine'
-require_relative 'identity/errors'
-require_relative 'identity/serializer'
-require_relative 'identity/session'
 require_relative 'identity/user'
 require_relative 'identity/version'
 

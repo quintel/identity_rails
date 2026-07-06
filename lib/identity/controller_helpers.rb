@@ -7,14 +7,11 @@ module Identity
 
     included do
       helper_method :identity_user
-      helper_method :identity_access_token
       helper_method :signed_in?
 
       helper_method :sign_up_url
       helper_method :user_profile_url
     end
-
-    IDENTITY_SESSION_KEY = 'identity.session'
 
     # Rendering helpers
     # -----------------
@@ -56,15 +53,13 @@ module Identity
     # -----
 
     def signed_in?
-      identity_session.present?
+      identity_token.present?
     end
 
     def identity_user
-      identity_session&.user
-    end
+      return @identity_user if defined?(@identity_user)
 
-    def identity_access_token
-      identity_session&.access_token
+      @identity_user = identity_token && Identity::User.from_jwt_claims(identity_token)
     end
 
     # Routes
@@ -87,33 +82,23 @@ module Identity
 
     private
 
-    def identity_session
-      return nil unless identity_session_attributes.present?
-      return @identity_session if @identity_session
+    # The verified claims of the JWT session cookie, or nil when it is absent or invalid. This is
+    # the shared domain cookie that acts as the browser session: a missing or expired cookie simply
+    # means "signed out", so the user re-authenticates (or the session is refreshed) rather than
+    # seeing a 401 (contrast with Identity::ResourceServer, which raises for API requests).
+    def identity_token
+      return @identity_token if defined?(@identity_token)
 
-      id_session, refreshed = Identity::Session.load_fresh(identity_session_attributes)
-      session[IDENTITY_SESSION_KEY] = id_session.dump if refreshed
+      @identity_token = session_cookie_token && Identity::TokenDecoder.decode(session_cookie_token)
+    rescue Identity::TokenDecoder::DecodeError
+      @identity_token = nil
+    end
 
-      @identity_session = id_session
-    rescue Identity::InvalidGrant => e
-      Rails.logger.error(e.message)
-
-      if Identity.config.on_invalid_grant
-        Identity.config.on_invalid_grant.call(self, e)
-      else
-        reset_session
-        nil
-      end
-    rescue StandardError => e
-      Rails.logger.error(e.message)
-      Sentry.capture_exception(e) if defined?(Sentry)
-
-      reset_session
-
-      # A schema mismatch may occur if we change how we serialize data, and an issuer mismatch will
-      # happen when running locally and changing which ETEngine is used. Both are recoverable by
-      # signing the user out.
-      raise e unless e.is_a?(Identity::SchemaMismatch) || e.is_a?(Identity::IssuerMismatch)
+    # The raw JWT from the shared session cookie, or nil. Uses request.cookies (not the `cookies`
+    # helper) so the same extraction works from Identity::ResourceServer in API controllers too;
+    # it's the single place either concern reads the cookie.
+    def session_cookie_token
+      request.cookies[Identity.config.session_cookie_name].presence
     end
 
     # Remembers the current path so that the user can be redirected back to it after signing in.
@@ -127,11 +112,6 @@ module Identity
     # fallback path.
     def return_to_path(fallback)
       session.delete(:return_to) || fallback
-    end
-
-    # Returns the attributes stored in the session for authentication.
-    def identity_session_attributes
-      session[IDENTITY_SESSION_KEY]
     end
   end
 end

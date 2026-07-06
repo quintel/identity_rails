@@ -1,89 +1,77 @@
 # frozen_string_literal: true
 
 RSpec.describe Identity::ControllerHelpers do
-  context 'when the serialized session is invalid' do
+  describe 'JWT session cookie identity' do
     let(:controller) do
       Class.new do
         def self.helper_method(*); end
-
         include Identity::ControllerHelpers
 
-        def identity_session_attributes
-          { 'invalid' => true }
-        end
+        attr_reader :request, :session
 
-        def reset_session; end
+        define_method(:initialize) do
+          @request = Struct.new(:cookies).new({})
+          @session = {}
+        end
       end.new
     end
 
-    it 'resets the session' do
-      allow(controller).to receive(:reset_session)
-
-      controller.send(:identity_session)
-      expect(controller).to have_received(:reset_session)
-    end
-  end
-
-  context 'when the refreshing the token fails' do
-    let(:controller) do
-      Class.new do
-        def self.helper_method(*); end
-
-        include Identity::ControllerHelpers
-
-        def identity_session_attributes
-          { 'invalid' => true }
-        end
-
-        def reset_session; end
-      end.new
+    let(:claims) do
+      { 'sub' => '42', 'user' => { 'email' => 'a@b.c', 'name' => 'Ada', 'admin' => true } }
     end
 
-    before do
-      allow(Identity::Session).to receive(:load_fresh).and_raise(Identity::InvalidGrant)
-    end
-
-    it 'resets the session' do
-      allow(controller).to receive(:reset_session)
-
-      controller.send(:identity_session)
-      expect(controller).to have_received(:reset_session)
-    end
-  end
-
-  context 'when an unexpected error occurs' do
-    let(:controller) do
-      Class.new do
-        def self.helper_method(*); end
-
-        include Identity::ControllerHelpers
-
-        def identity_session_attributes
-          { 'invalid' => true }
-        end
-
-        def reset_session; end
-      end.new
-    end
-
-    before do
-      allow(Identity::Session).to receive(:load_fresh).and_raise(Identity::Error, 'oops')
-    end
-
-    it 'resets the session' do
-      allow(controller).to receive(:reset_session)
-
-      begin
-        controller.send(:identity_session)
-      rescue Identity::Error
-        # Do nothing.
+    context 'with a valid cookie' do
+      before do
+        controller.request.cookies[Identity.config.session_cookie_name] = 'raw.jwt'
+        allow(Identity::TokenDecoder).to receive(:decode).and_return(claims)
       end
 
-      expect(controller).to have_received(:reset_session)
+      it 'is signed in' do
+        expect(controller.signed_in?).to be(true)
+      end
+
+      it 'builds the user from the claims' do
+        user = controller.identity_user
+        expect(user.id).to eq('42')
+        expect(user.email).to eq('a@b.c')
+        expect(user.name).to eq('Ada')
+        expect(user.admin?).to be(true)
+      end
     end
 
-    it 'raises the error' do
-      expect { controller.send(:identity_session) }.to raise_error(Identity::Error, 'oops')
+    context 'with a top-level roles claim' do
+      before do
+        controller.request.cookies[Identity.config.session_cookie_name] = 'raw.jwt'
+        allow(Identity::TokenDecoder).to receive(:decode).and_return(
+          claims.merge('roles' => %w[admin researcher])
+        )
+      end
+
+      it 'uses the roles claim' do
+        expect(controller.identity_user.roles).to include('researcher', 'admin')
+      end
+    end
+
+    context 'with an invalid cookie' do
+      before do
+        controller.request.cookies[Identity.config.session_cookie_name] = 'bad'
+        allow(Identity::TokenDecoder).to receive(:decode)
+          .and_raise(Identity::TokenDecoder::DecodeError)
+      end
+
+      it 'is not signed in' do
+        expect(controller.signed_in?).to be(false)
+      end
+
+      it 'has no identity user' do
+        expect(controller.identity_user).to be_nil
+      end
+    end
+
+    context 'with no cookie' do
+      it 'is not signed in' do
+        expect(controller.signed_in?).to be(false)
+      end
     end
   end
 end

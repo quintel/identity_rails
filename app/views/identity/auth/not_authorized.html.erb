@@ -12,7 +12,7 @@
   <%= render partial: 'identity/auth/back_button', locals: { url: :back } %>
 
   <% if signed_in? %>
-    <%= button_to '/auth/logout', method: :post do %>
+    <%= button_to sign_out_path, method: :post do %>
       <%= t('identity.sign_out') %>
     <% end%>
   <% else %>

@@ -5,6 +5,16 @@ ETM's [Identity](https://id.energytransitionmodel.com/users/sign_in) application
 helpers for requiring that a user (or admin) be signed in to use controllers or actions, as well as
 standard pages requesting the user sign in.
 
+## How sign-in works
+
+The browser session is a single JWT, held in a cookie (`etm_session` by default) scoped to the
+parent domain shared by every ETM app. The provider (MyETM) mints and refreshes this cookie; every
+other app only ever reads and verifies it — there is no local session state to keep in sync. The
+"Sign in" link still routes the visitor through the provider's login page (so a fresh browser is
+prompted to authenticate), but the cookie is what makes the visitor "signed in" here, both for
+resource-server requests (`Identity::ResourceServer`, which also accepts the same cookie value as a
+bearer token) and for a normal signed-in page load (`Identity::ControllerHelpers`).
+
 ## Installation
 
 Add the engine to the Rails application Gemfile:
@@ -45,13 +55,14 @@ before_action :authenticate_admin!
 
 Identical to `authenticate_user!` except that the signed-in user must also have the `admin` role.
 
-#### `current_user`
+#### `identity_user`
 
-Returns the current user, if signed in, or nil otherwise.
+Returns the current `Identity::User`, if signed in, or nil otherwise.
 
 #### `signed_in?`
 
-Returns whether the visitor is signed in.
+Returns whether the visitor is signed in (i.e. whether the shared session cookie is present and
+verifies).
 
 #### `sign_in_path` / `sign_out_page`
 
@@ -60,11 +71,6 @@ show a sign in prompt, while POST sends the user to the identity provider.
 
 Signing out is only possible with a POST request. The user will be signed out of the application
 _and_ the identity provider, and will finally be redirected back to the root of your application.
-
-#### `identity_session`
-
-Returns the current `Identity::Session` if the visitor is signed in. This gives access to the user
-and a copy of the access token which can be used to send further requests to the identity provider.
 
 ## License
 

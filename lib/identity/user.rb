@@ -11,31 +11,18 @@ module Identity
     option :name,  Dry::Types['optional.strict.string']
 
     class << self
-      def serializer
-        @serializer ||= Serializer.new(
-          id: ->(user) { user.id },
-          roles: ->(user) { user.roles.to_a },
-          email: ->(user) { user.email },
-          name: ->(user) { user.name }
-        )
-      end
+      # Public: Creates a user from the verified claims of the shared JWT session cookie. Roles
+      # travel as a top-level claim when present; otherwise fall back to the boolean admin flag
+      # carried in the `user` claim.
+      def from_jwt_claims(claims)
+        user = claims['user'] || {}
 
-      # Public: Creates a user from an OmniAuth::AuthHash.
-      def from_omniauth_hash(hash)
         new(
-          id: hash['sub'],
-          roles: hash.fetch('roles', []).to_a,
-          email: hash['email'],
-          name: hash['name']
+          id: claims['sub'],
+          roles: claims['roles'] || (user['admin'] ? ['admin'] : []),
+          email: user['email'],
+          name: user['name']
         )
-      end
-
-      # Public: Loads a user from a hash representation (typically from a Rails session).
-      #
-      # Raises a SchemaMismatch error if the schema version of the hash does not match the current
-      # schema, or a KeyError if the hash is missing a required key.
-      def load(hash)
-        new(**serializer.loadable_hash(hash))
       rescue Dry::Types::ConstraintError => e
         raise Error, e.message
       end
@@ -43,11 +30,6 @@ module Identity
 
     def admin?
       roles.include?('admin')
-    end
-
-    # Public: Returns a hash representation of the user for serialization in the Rails session.
-    def dump
-      self.class.serializer.dump(self)
     end
 
     # Public: Returns if the user is equal to the other object. This is the case if the other object
