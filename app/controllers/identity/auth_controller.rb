@@ -3,7 +3,13 @@
 module Identity
   # Handles OAuth2 callbacks and failures.
   class AuthController < ApplicationController
-    def sign_in; end
+    # Renders the sign-in button. When a visitor was redirected here only because their short access
+    # cookie lapsed, the layout's recovery probe silently refreshes the shared session and reloads —
+    # by which point they're signed in, so send them on to where they were headed instead of showing
+    # the button again.
+    def sign_in
+      redirect_to(return_to_path(main_app.root_path)) if signed_in?
+    end
 
     # By the time this fires, the shared JWT session cookie is already set: the provider (MyETM)
     # sets it during its own login step, earlier in this same top-level navigation, on the same
