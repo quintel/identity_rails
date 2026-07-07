@@ -14,6 +14,31 @@ RSpec.describe 'Auth', type: :request do
     end
   end
 
+  describe 'GET /auth/identity (sign-in page)' do
+    context 'when not signed in' do
+      it 'renders the page carrying the silent recovery probe' do
+        get '/auth/identity'
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include('/session/refresh')
+      end
+    end
+
+    context 'when already signed in (session was silently recovered)' do
+      before do
+        Identity.config.client_id = 'abc123'
+        mock_omniauth_user_sign_in
+        get '/auth/identity/callback'
+      end
+
+      it 'forwards the visitor on instead of showing the sign-in button' do
+        get '/auth/identity'
+
+        expect(response).to redirect_to('/')
+      end
+    end
+  end
+
   describe 'POST /auth/logout' do
     context 'when not signed in' do
       it 'redirects to the root page' do
