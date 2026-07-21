@@ -6,8 +6,7 @@ RSpec.describe Identity::User do
       let(:user) do
         described_class.from_jwt_claims(
           'sub' => '123',
-          'roles' => %w[admin],
-          'user' => { 'email' => 'hello@example.org', 'name' => 'John Doe' }
+          'user' => { 'email' => 'hello@example.org', 'name' => 'John Doe', 'admin' => true }
         )
       end
 
@@ -23,28 +22,36 @@ RSpec.describe Identity::User do
         expect(user.name).to eq('John Doe')
       end
 
-      it 'sets the roles' do
-        expect(user.roles).to eq(Set.new(%w[admin]))
+      it 'derives the roles from the admin flag' do
+        expect(user.roles).to eq(Set.new(%w[user admin]))
       end
     end
 
-    context 'with no top-level roles claim, but an admin flag' do
+    context 'without an admin flag' do
       let(:user) do
-        described_class.from_jwt_claims('sub' => '123', 'user' => { 'admin' => true })
+        described_class.from_jwt_claims('sub' => '123', 'user' => { 'admin' => false })
       end
 
-      it 'derives the admin role' do
-        expect(user.roles).to eq(Set.new(%w[admin]))
+      it 'has the user role only' do
+        expect(user.roles).to eq(Set.new(%w[user]))
+      end
+
+      it 'is not an admin' do
+        expect(user).not_to be_admin
       end
     end
 
-    context 'with no top-level roles claim and no admin flag' do
+    context 'with a top-level roles claim' do
       let(:user) do
-        described_class.from_jwt_claims('sub' => '123', 'user' => {})
+        described_class.from_jwt_claims(
+          'sub' => '123', 'roles' => %w[user admin], 'user' => { 'admin' => false }
+        )
       end
 
-      it 'has no roles' do
-        expect(user.roles).to be_empty
+      # Guards against a provider that starts emitting a roles claim: privileges must come from the
+      # signed `user.admin` flag every consumer agrees on, not from a claim nothing mints today.
+      it 'ignores it in favour of the admin flag' do
+        expect(user.roles).to eq(Set.new(%w[user]))
       end
     end
 

@@ -47,6 +47,37 @@ RSpec.describe 'Auth', type: :request do
     end
   end
 
+  # The probe is what makes a bounced-to-sign-in visitor recover silently, and it is the only place
+  # the gem's own pages consume the shared session_keeper module — so its asset has to resolve.
+  describe 'the session recovery probe on the identity layout' do
+    context 'when not signed in' do
+      before { get '/authenticated/user' }
+
+      it 'renders the probe' do
+        expect(response.body).to include('recoverSession(')
+      end
+
+      it 'calls the shared module rather than reimplementing recovery' do
+        expect(response.body).to match(%r{import \{ recoverSession \} from '/assets/identity/session_keeper[^']*\.js'})
+      end
+
+      it 'points the probe at the provider' do
+        expect(response.body).to include("recoverSession('#{Identity.config.issuer}')")
+      end
+    end
+
+    context 'when signed in' do
+      before do
+        sign_in_cookie(mock_identity_user_sign_in)
+        get '/authenticated/user'
+      end
+
+      it 'does not render the probe' do
+        expect(response.body).not_to include('recoverSession(')
+      end
+    end
+  end
+
   describe 'POST /auth/sign_out' do
     context 'when not signed in' do
       it 'redirects to the root page' do

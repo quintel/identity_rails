@@ -25,6 +25,29 @@ const refresh = (idpUrl) =>
     .then((response) => response.ok)
     .catch(() => false);
 
+// Attempts to slide a lapsed session back into life, once, and reloads if it worked.
+//
+// The access cookie has gone but the 24h refresh cookie may still be valid, so one refresh can turn
+// "you were signed out" into a seamless return. Guarded by sessionStorage because a failed recovery
+// followed by a reload is a redirect loop: a genuine guest, or someone whose refresh token was
+// revoked by single-logout, gets a 401 here and must be left alone.
+//
+// Exported so the provider's own sign-in page can run it too — a visitor bounced to that page has
+// no other chance to recover, and it must not drift from the keeper's copy of this logic.
+export function recoverSession(idpUrl) {
+  if (window.sessionStorage.getItem(RECOVERY_KEY)) return Promise.resolve(false);
+
+  window.sessionStorage.setItem(RECOVERY_KEY, "1");
+
+  return refresh(idpUrl).then((ok) => {
+    if (ok) {
+      window.sessionStorage.removeItem(RECOVERY_KEY);
+      window.location.reload();
+    }
+    return ok;
+  });
+}
+
 export function startSessionKeeper({ idpUrl }) {
   let timer;
 
@@ -48,14 +71,8 @@ export function startSessionKeeper({ idpUrl }) {
       timer = window.setTimeout(() => {
         refresh(idpUrl).then((ok) => ok && schedule());
       }, delay);
-    } else if (!window.sessionStorage.getItem(RECOVERY_KEY)) {
-      window.sessionStorage.setItem(RECOVERY_KEY, "1");
-      refresh(idpUrl).then((ok) => {
-        if (ok) {
-          window.sessionStorage.removeItem(RECOVERY_KEY);
-          window.location.reload();
-        }
-      });
+    } else {
+      recoverSession(idpUrl);
     }
   };
 
