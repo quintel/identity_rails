@@ -27,8 +27,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'dry-validation', '>= 1.10'
   spec.add_dependency 'faraday', '>= 2'
   spec.add_dependency 'jwt', '>= 2.5'
-  spec.add_dependency 'omniauth', '>= 2.1'
-  spec.add_dependency 'omniauth_openid_connect', '~> 0.4'
-  spec.add_dependency 'omniauth-rails_csrf_protection', '~> 1.0'
+  # Used only for OIDC discovery (jwks_uri, end_session_endpoint); no OmniAuth flow is run.
+  spec.add_dependency 'openid_connect', '>= 2.2'
   spec.add_dependency 'rails', '>= 7.0.0'
 end

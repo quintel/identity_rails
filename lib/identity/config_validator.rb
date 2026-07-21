@@ -11,7 +11,10 @@ module Identity
     params do
       required(:issuer).filled(:string)
       required(:client_id).filled(:string)
-      required(:client_secret).filled(:string)
+      # Vestigial: nothing exchanges an authorization code any more, so no client secret is used.
+      # Kept optional so existing deployments' settings stay valid; drop it once every app's config
+      # has been cleaned up.
+      optional(:client_secret).maybe(:string)
       required(:client_uri).filled(:string)
       optional(:resource_uri).maybe(:string)
     end

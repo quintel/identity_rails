@@ -4,9 +4,7 @@ require 'dry-initializer'
 require 'dry-types'
 require 'dry-validation'
 require 'faraday'
-require 'omniauth'
-require 'omniauth/rails_csrf_protection'
-require 'omniauth_openid_connect'
+require 'openid_connect'
 
 # Helpers for interacting with the Identity authentication and authorization service.
 module Identity

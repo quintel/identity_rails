@@ -2,32 +2,12 @@
 
 module Identity
   class Engine < ::Rails::Engine
-    initializer 'identity.omniauth' do |app|
-      if Identity.config.validate_config
-        Identity::ConfigValidator.validate!(Identity.config.to_h)
-      end
-
-      app.middleware.use(::OmniAuth::Builder) do
-        issuer = URI.parse(Identity.config.issuer)
-
-        provider(
-          :openid_connect,
-          name: 'identity',
-          discovery: true,
-          issuer: Identity.config.issuer,
-          response_type: :code,
-          allow_authorize_params: %i[id_token_hint login_hint],
-          scope: Identity.config.scope,
-          client_options: {
-            port:         issuer.port,
-            scheme:       issuer.scheme,
-            host:         issuer.host,
-            identifier:   Identity.config.client_id,
-            secret:       Identity.config.client_secret,
-            redirect_uri: "#{Identity.config.client_uri}/auth/identity/callback"
-          }
-        )
-      end
+    # No OmniAuth provider is registered any more: apps do not run an authorization-code flow. The
+    # provider's own login sets the shared session cookie on the parent domain, and each app
+    # verifies that cookie locally (Identity::TokenDecoder), so there is no per-app OAuth session
+    # left for a callback to establish.
+    initializer 'identity.validate_config' do
+      Identity::ConfigValidator.validate!(Identity.config.to_h) if Identity.config.validate_config
     end
 
     # Include the ControllerHelpers in the application.

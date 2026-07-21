@@ -92,15 +92,13 @@ RSpec.describe Identity::ConfigValidator do
     end
   end
 
+  # Vestigial since sign-in stopped being an authorization-code flow: nothing exchanges a code, so
+  # no client secret is needed. Still accepted so existing deployments' settings remain valid.
   context 'with a missing client_secret' do
     let(:config) { valid_config.except(:client_secret) }
 
-    it 'is a failure' do
-      expect(result).to be_failure
-    end
-
-    it 'has an error on client_secret' do
-      expect(result.errors[:client_secret]).to include('is missing')
+    it 'is a success' do
+      expect(result).to be_success
     end
   end
 

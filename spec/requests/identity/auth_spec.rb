@@ -3,43 +3,51 @@
 RSpec.describe 'Auth', type: :request do
   after { Identity.reset_config }
 
-  describe 'GET /auth/failure' do
-    context 'with a real OAuth error' do
-      it 'renders the failure page' do
-        get '/auth/failure', params: { error: 'server_error' }
-
-        expect(response).to have_http_status(:ok)
-        expect(response.body).not_to be_empty
-      end
-    end
+  def sign_in_cookie(token)
+    cookies[Identity.config.session_cookie_name] = token
   end
 
-  describe 'GET /auth/identity (sign-in page)' do
+  describe 'GET /auth/identity (start sign-in)' do
     context 'when not signed in' do
-      it 'renders the page carrying the silent recovery probe' do
+      it 'redirects to the provider’s sign-in page' do
         get '/auth/identity'
 
-        expect(response).to have_http_status(:ok)
-        expect(response.body).to include('/session/refresh')
+        expect(response).to have_http_status(:found)
+        expect(response.location).to start_with("#{Identity.config.issuer}/identity/sign_in")
+      end
+
+      it 'carries the page the visitor wanted as an absolute return_to' do
+        get '/authenticated/user'
+        get '/auth/identity'
+
+        query = Rack::Utils.parse_nested_query(URI.parse(response.location).query)
+
+        expect(query['return_to']).to eq("#{Identity.config.client_uri}/authenticated/user")
+      end
+
+      it 'falls back to the app root when there is nothing to return to' do
+        get '/auth/identity'
+
+        query = Rack::Utils.parse_nested_query(URI.parse(response.location).query)
+
+        expect(query['return_to']).to eq("#{Identity.config.client_uri}/")
       end
     end
 
+    # A visitor can land here holding a valid cookie when the recovery probe slid a lapsed session
+    # and reloaded. Sending them to the provider again would be a pointless round-trip.
     context 'when already signed in (session was silently recovered)' do
-      before do
-        Identity.config.client_id = 'abc123'
-        mock_omniauth_user_sign_in
-        get '/auth/identity/callback'
-      end
+      before { sign_in_cookie(mock_identity_user_sign_in) }
 
-      it 'forwards the visitor on instead of showing the sign-in button' do
+      it 'forwards the visitor on instead of bouncing to the provider' do
         get '/auth/identity'
 
-        expect(response).to redirect_to('/')
+        expect(response).to redirect_to("#{Identity.config.client_uri}/")
       end
     end
   end
 
-  describe 'POST /auth/logout' do
+  describe 'POST /auth/sign_out' do
     context 'when not signed in' do
       it 'redirects to the root page' do
         post '/auth/sign_out'
@@ -51,9 +59,7 @@ RSpec.describe 'Auth', type: :request do
     context 'when signed in' do
       before do
         Identity.config.client_id = 'abc123'
-
-        mock_omniauth_user_sign_in
-        get '/auth/identity/callback'
+        sign_in_cookie(mock_identity_user_sign_in)
       end
 
       it 'redirects to the Identity app' do

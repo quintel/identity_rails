@@ -8,6 +8,7 @@ RSpec.describe 'Sign out', type: :system do
     Identity.config.issuer = Capybara.default_host
 
     sign_in
+    visit '/'
     expect(page).to have_content('Signed in as')
 
     click_button 'Sign out'

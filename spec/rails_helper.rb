@@ -14,9 +14,6 @@ require 'capybara/rspec'
 require_relative 'support/http_client_helpers'
 require_relative 'support/system_helpers'
 
-OmniAuth.config.test_mode = true
-OmniAuth.config.logger = Rails.logger
-
 require 'dry/configurable/test_interface'
 
 module Identity
