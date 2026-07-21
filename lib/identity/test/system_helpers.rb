@@ -2,57 +2,52 @@
 
 module Identity
   module Test
-    # Provides helpers for system specs.
+    # Provides helpers for system and request specs.
+    #
+    # There is no sign-in flow for a host app's specs to drive: the provider owns the login form and
+    # mints the shared session cookie. What a host app needs is a validly-signed cookie and a JWKS
+    # that Identity::TokenDecoder will accept — which is what these helpers set up.
     module SystemHelpers
       TEST_SIGNING_KEY = OpenSSL::PKey::RSA.new(2048)
       TEST_KID = 'identity-test'
 
-      # Public: Instructs OmniAuth to provide a fake authentication response where the user is a
-      # user.
-      def mock_omniauth_user_sign_in(**kwargs)
-        mock_omniauth_sign_in(**kwargs)
+      # Public: Builds a signed session token for a regular user and stubs the provider's JWKS so
+      # Identity::TokenDecoder accepts it. Returns the raw JWT; pass it to #identity_session_cookie
+      # in a system spec, or set it as a cookie directly in a request spec.
+      def mock_identity_user_sign_in(**kwargs)
+        mock_identity_sign_in(**kwargs)
       end
 
-      # Public: Instructs OmniAuth to provide a fake authentication response where the user is an
-      # administrator.
-      def mock_omniauth_admin_sign_in(**kwargs)
-        mock_omniauth_sign_in(roles: %w[user admin], **kwargs)
+      # Public: As above, for a user holding the admin role.
+      def mock_identity_admin_sign_in(**kwargs)
+        mock_identity_sign_in(roles: %w[user admin], **kwargs)
       end
 
-      # Public: Simulates a user who already holds a valid shared JWT session cookie, as if MyETM
-      # had already signed them in during an earlier step of the same top-level navigation. There is
-      # no separate provider app in this test harness to set the cookie mid-navigation, so it is
-      # applied as a side effect of the real sign-in callback (still exercising the real
-      # rotate_session/redirect logic) rather than requiring a network round trip to a real provider.
-      #
-      # Returns the raw signed JWT.
-      def mock_omniauth_sign_in(
+      def mock_identity_sign_in(
         id: SecureRandom.random_number(1e10.to_i),
         name: 'John Doe',
         email: 'hello@example.org',
         roles: ['user'],
         expires_at: 1.hour.from_now
       )
-        OmniAuth.config.test_mode = true
-        OmniAuth.config.logger = Rails.logger
-
-        OmniAuth.config.mock_auth[:identity] = OmniAuth::AuthHash.new('provider' => 'identity', 'uid' => id)
-
-        token = sign_test_jwt(id: id, name: name, email: email, roles: roles, expires_at: expires_at)
-
         allow(Identity::TokenDecoder).to receive(:jwk_set).and_return(
           'keys' => [JWT::JWK.new(TEST_SIGNING_KEY.public_key, TEST_KID).export]
         )
 
-        allow_any_instance_of(Identity::AuthController).to receive(:callback) do |controller|
-          controller.instance_exec do
-            rotate_session
-            cookies[Identity.config.session_cookie_name] = token
-            redirect_to(return_to_path(main_app.root_path))
-          end
+        sign_test_jwt(id: id, name: name, email: email, roles: roles, expires_at: expires_at)
+      end
+
+      # Public: Places the token in the browser's cookie jar, as the provider would have done during
+      # its own login step. Capybara has no cross-driver cookie API, so this covers rack_test (the
+      # driver these specs use) and raises loudly rather than silently doing nothing elsewhere.
+      def identity_session_cookie(token)
+        browser = page.driver.browser
+
+        unless browser.respond_to?(:rack_mock_session)
+          raise "identity_session_cookie supports the rack_test driver; got #{browser.class}"
         end
 
-        token
+        browser.rack_mock_session.cookie_jar[Identity.config.session_cookie_name] = token
       end
 
       private
@@ -60,7 +55,7 @@ module Identity
       def sign_test_jwt(id:, name:, email:, roles:, expires_at:)
         payload = {
           iss: Identity.config.issuer,
-          aud: Identity.config.client_uri,
+          aud: [Identity.config.client_uri],
           sub: id.to_s,
           exp: expires_at.to_i,
           roles: roles,

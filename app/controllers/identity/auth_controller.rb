@@ -1,27 +1,23 @@
 # frozen_string_literal: true
 
 module Identity
-  # Handles OAuth2 callbacks and failures.
+  # Starts and ends a session with the identity provider.
+  #
+  # There is no OAuth callback here any more. Under the shared session cookie the provider's own
+  # login step sets the cookie on the parent domain, so by the time the visitor is back in this app
+  # they are already signed in — the authorization-code round-trip existed only to build a per-app
+  # session that no longer exists. Signing in is therefore a plain redirect to the provider,
+  # carrying the page to return to.
   class AuthController < ApplicationController
-    # Renders the sign-in button. When a visitor was redirected here only because their short access
-    # cookie lapsed, the layout's recovery probe silently refreshes the shared session and reloads —
-    # by which point they're signed in, so send them on to where they were headed instead of showing
-    # the button again.
+    # Sends the visitor to the provider's sign-in page.
+    #
+    # A visitor can also arrive here already holding a valid session: the layout's recovery probe
+    # slides a lapsed session and reloads, by which point they are signed in. Send them on to where
+    # they were headed rather than bouncing them to the provider for nothing.
     def sign_in
-      redirect_to(return_to_path(main_app.root_path)) if signed_in?
-    end
+      return redirect_to(return_to_url) if signed_in?
 
-    # By the time this fires, the shared JWT session cookie is already set: the provider (MyETM)
-    # sets it during its own login step, earlier in this same top-level navigation, on the same
-    # parent domain. All that's left to do here is rotate the session (fixation hygiene) and return
-    # the visitor to where they were headed.
-    def callback
-      rotate_session
-      redirect_to(return_to_path(main_app.root_path))
-    end
-
-    def failure
-      # A real OAuth error (e.g. the user denied the request): render the failure page.
+      redirect_to(identity_sign_in_url(return_to: return_to_url), allow_other_host: true)
     end
 
     def sign_out
@@ -38,16 +34,14 @@ module Identity
 
     private
 
-    # Creates a new session, retaining all the non-identity values from the current one. This gives
-    # the visitor a new session_id after signing in, preventing a session fixation attack, while
-    # keeping any other session values they may have.
-    def rotate_session
-      prev_session = session.to_h.except('identity', 'session_id')
-      reset_session
-      prev_session.each { |key, value| session[key.to_sym] = value }
+    # Where to send the visitor once they are signed in, as an absolute URL: the provider is on
+    # another host and can only redirect back here with a full URL.
+    def return_to_url
+      path = return_to_path(main_app.root_path)
+      path.start_with?('http://', 'https://') ? path : "#{Identity.config.client_uri}#{path}"
     end
 
-    # Builds an RP-initiated logout URL. Passes the client id and a post-logout redirect
+    # Builds an RP-initiated logout URL. Passes the client id and a post-logout redirect.
     def logout_url
       uri = URI.parse(Identity.discovery_config.end_session_endpoint)
       uri.query = {

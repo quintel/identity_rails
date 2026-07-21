@@ -26,25 +26,49 @@ module Identity
       # claim would otherwise pass.
       raise JWT::DecodeError, 'Missing sub claim' if payload['sub'].blank?
 
+      verify_audience!(payload['aud'])
+
       payload.with_indifferent_access
     rescue JWT::DecodeError => e
       raise DecodeError, e.message
     end
 
-    # `aud` may be a single URI or a JSON array of URIs: the shared session cookie targets several
-    # in-scope apps at once. JWT::Claims::Audience already checks membership (not equality) when
-    # either side is an array, so no hand-rolled normalisation is needed here.
+    # Audience is verified by #verify_audience! rather than by the `jwt` gem; see the note there.
     def decode_options
       {
         algorithms: ['RS256'],
         jwks: jwk_loader,
         verify_iss: true,
         iss: Identity.config.issuer,
-        verify_aud: true,
-        aud: Identity.config.client_uri,
+        verify_aud: false,
         verify_expiration: true,
         required_claims: %w[sub exp]
       }
+    end
+
+    # `aud` is an array of the URIs a token is valid for: the shared session cookie targets several
+    # in-scope apps at once. Membership is checked here instead of by JWT::Claims::Audience so that
+    # tokens minted before the shared-cookie migration still verify — those carry `aud` as a single
+    # space-delimited string ("https://a https://b"), which the gem compares by equality and would
+    # reject, killing every personal access token issued before the cutover.
+    #
+    # TRANSITIONAL, paired with the legacy `kid` MyETM publishes at /oauth/discovery/keys. Both go
+    # when the next major API break invalidates every pre-migration personal access token — a
+    # forcing event, not a calendar date; a PAT can be minted for up to 365 days, so any removal
+    # earlier than that must be coordinated with a user-visible change (API break notice, or a
+    # signing-key rotation which kills every pre-migration token regardless of `kid`).
+    #
+    # Removing the `.split` below is the whole change — after it, a legacy space-joined `aud` no
+    # longer matches anything.
+    #
+    # Note this is also a fix, not only a compatibility shim: the previous per-app decoders checked
+    # `aud.include?(client_uri)` against a String, i.e. substring matching, so an `aud` of
+    # "https://engine.example.com.evil" satisfied a client_uri of "https://engine.example.com".
+    def verify_audience!(aud)
+      audiences = Array(aud).flat_map { |entry| entry.to_s.split(' ') }
+      return if audiences.include?(Identity.config.client_uri)
+
+      raise JWT::DecodeError, 'Invalid audience'
     end
 
     # Resolves the signing key for a token by `kid`, fetching (and caching) the provider's JWKS.

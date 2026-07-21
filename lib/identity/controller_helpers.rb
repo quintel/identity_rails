@@ -11,6 +11,7 @@ module Identity
 
       helper_method :sign_up_url
       helper_method :user_profile_url
+      helper_method :identity_sign_in_url
     end
 
     # Rendering helpers
@@ -76,6 +77,20 @@ module Identity
     def sign_up_url
       uri = URI.parse(Identity.config.issuer)
       uri.path = '/identity/sign_up'
+
+      uri.to_s
+    end
+
+    # The provider's sign-in page, carrying the page to come back to afterwards.
+    #
+    # Signing in is a plain top-level navigation to the provider: it owns the form, and its login
+    # step sets the shared session cookie on the parent domain, which is all this app needs. There
+    # is no OAuth round-trip to bring the visitor back, so the destination travels as `return_to`
+    # and the provider validates it against its registered applications before redirecting.
+    def identity_sign_in_url(return_to: nil)
+      uri = URI.parse(Identity.config.issuer)
+      uri.path = '/identity/sign_in'
+      uri.query = { return_to: return_to || request.original_url }.to_query
 
       uri.to_s
     end

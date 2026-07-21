@@ -56,6 +56,26 @@ RSpec.describe Identity::TokenDecoder do
         .to raise_error(Identity::TokenDecoder::DecodeError)
     end
 
+    # TRANSITIONAL — delete alongside the `.split` in TokenDecoder#verify_audience!.
+    context 'with a legacy space-delimited audience string' do
+      it 'accepts one that includes the client' do
+        aud = "https://other.example #{Identity.config.client_uri}"
+        expect { described_class.decode(sign(claims.merge(aud: aud))) }.not_to raise_error
+      end
+
+      it 'rejects one that excludes the client' do
+        expect { described_class.decode(sign(claims.merge(aud: 'https://a https://b'))) }
+          .to raise_error(Identity::TokenDecoder::DecodeError)
+      end
+    end
+
+    # The per-app decoders this gem replaced compared with String#include?, so a lookalike host
+    # that merely contained the client_uri as a substring was accepted.
+    it 'rejects an audience that only contains the client uri as a substring' do
+      expect { described_class.decode(sign(claims.merge(aud: "#{Identity.config.client_uri}.evil"))) }
+        .to raise_error(Identity::TokenDecoder::DecodeError)
+    end
+
     it 'rejects a missing subject' do
       expect { described_class.decode(sign(claims.merge(sub: nil))) }
         .to raise_error(Identity::TokenDecoder::DecodeError)
