@@ -83,16 +83,16 @@ RSpec.configure do |config|
       id_config.client_id = SecureRandom.base58(16)
       id_config.client_secret = SecureRandom.base58(16)
       id_config.client_uri = Capybara.default_host
-      id_config.scope = %w[public openid profile email]
     end
 
-    discovery = instance_double(
-      OpenIDConnect::Discovery::Provider::Config::Response,
-      end_session_endpoint: "#{Identity.config.issuer}/identity/sign_out",
-      token_endpoint: "#{Identity.config.issuer}/oauth/token",
-      userinfo_endpoint: "#{Identity.config.issuer}/oauth/userinfo"
+    allow(Identity).to receive(:discovery_config).and_return(
+      {
+        end_session_endpoint: "#{Identity.config.issuer}/identity/sign_out",
+        jwks_uri: "#{Identity.config.issuer}/oauth/discovery/keys",
+        token_endpoint: "#{Identity.config.issuer}/oauth/token",
+        userinfo_endpoint: "#{Identity.config.issuer}/oauth/userinfo"
+      }.with_indifferent_access
     )
-    allow(Identity).to receive(:discovery_config).and_return(discovery)
   end
 
   config.before(:each, type: :system) do

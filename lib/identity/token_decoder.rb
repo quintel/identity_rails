@@ -88,7 +88,7 @@ module Identity
     end
 
     def jwks_client
-      Faraday.new(Identity.discovery_config.jwks_uri) do |conn|
+      Faraday.new(Identity.discovery_config[:jwks_uri]) do |conn|
         conn.request(:json)
         conn.response(:json)
         conn.response(:raise_error)
@@ -100,9 +100,11 @@ module Identity
       token.sub(/^etm_(beta_)?/, '')
     end
 
+    # Rails.cache is a NullStore by default in development, which would re-fetch the JWKS on every
+    # token verification; fall back to a process-local store whenever caching is disabled.
     def jwk_cache
       @jwk_cache ||=
-        if defined?(Rails) && Rails.env.development?
+        if Rails.cache.is_a?(ActiveSupport::Cache::NullStore)
           ActiveSupport::Cache::MemoryStore.new
         else
           Rails.cache

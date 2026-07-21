@@ -49,6 +49,21 @@ RSpec.describe 'Token contract with MyETM' do
     end
   end
 
+  # Identity::User derives roles from user.admin precisely because there is no roles claim. If the
+  # provider ever starts emitting one, this fails and the derivation should be revisited.
+  it 'carries authorisation as the user.admin flag, not a roles claim' do
+    claims = Identity::TokenDecoder.decode(contract['session_token'])
+
+    expect(claims).not_to have_key('roles')
+    expect(claims['user']).to have_key('admin')
+  end
+
+  it 'builds an Identity::User whose admin status matches the flag' do
+    claims = Identity::TokenDecoder.decode(contract['session_token'])
+
+    expect(Identity::User.from_jwt_claims(claims).admin?).to eq(claims['user']['admin'])
+  end
+
   it 'rejects it for an app outside its audience' do
     Identity.config.client_uri = 'https://not-an-etm-app.example.com'
 

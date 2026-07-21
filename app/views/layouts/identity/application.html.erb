@@ -41,19 +41,14 @@
       lapsed still holds a valid 24h refresh cookie; one refresh via MyETM restores the shared
       session and reloads, and AuthController#sign_in then forwards them on — turning "you were
       bounced to sign in" into a seamless return. A genuine guest's refresh 401s and they use the
-      button. sessionStorage guards against reload loops (mirrors identity/session_keeper). %>
+      button.
+
+      This calls the same recoverSession the session keeper uses, rather than reimplementing it:
+      the two ran identical fetch/guard/reload logic and had to be kept in step by hand. %>
   <% unless signed_in? %>
-    <%= javascript_tag nonce: true do %>
-      (function () {
-        var KEY = 'etm-session-recovery';
-        if (window.sessionStorage.getItem(KEY)) return;
-        window.sessionStorage.setItem(KEY, '1');
-        fetch('<%= j Identity.config.issuer %>/session/refresh', { method: 'POST', credentials: 'include' })
-          .then(function (response) {
-            if (response.ok) { window.sessionStorage.removeItem(KEY); window.location.reload(); }
-          })
-          .catch(function () {});
-      })();
+    <%= javascript_tag nonce: true, type: 'module' do %>
+      import { recoverSession } from '<%= asset_path('identity/session_keeper.js') %>';
+      recoverSession('<%= j Identity.config.issuer %>');
     <% end %>
   <% end %>
 

@@ -4,7 +4,6 @@ require 'dry-initializer'
 require 'dry-types'
 require 'dry-validation'
 require 'faraday'
-require 'openid_connect'
 
 # Helpers for interacting with the Identity authentication and authorization service.
 module Identity
@@ -25,9 +24,6 @@ module Identity
 
   # Optional URL (protocol and hostname) for the resource server to connect to
   setting :resource_uri
-
-  # The scopes to request when authenticating.
-  setting :scope, default: 'public'
 
   # Sets whether to validate the config when mounting the Rails engine. It's useful to disabling
   # this when, for example, building production images where the config is not yet available.
@@ -56,10 +52,25 @@ module Identity
     end
   end
 
-  # Returns the OpenID Connect discovery configuration for the Identity service.
+  # Returns the provider's OpenID Connect discovery document, fetched once per process.
+  #
+  # Only two entries are used (jwks_uri, end_session_endpoint), so this is a plain GET of the
+  # well-known document rather than a dependency on the openid_connect gem: that gem pulled in six
+  # transitive dependencies — including json-jwt, which TokenDecoder was deliberately moved off —
+  # and forced HTTPS on discovery, which needed a monkeypatch to undo for local development.
+  #
+  # @return [ActiveSupport::HashWithIndifferentAccess]
   def self.discovery_config
-    @discovery_config ||=
-      OpenIDConnect::Discovery::Provider::Config.discover!(Identity.config.issuer)
+    @discovery_config ||= http_client
+      .get("#{Identity.config.issuer.to_s.chomp('/')}/.well-known/openid-configuration")
+      .body
+      .with_indifferent_access
+  end
+
+  # Forgets the memoised discovery document. Mainly useful in tests, and after reconfiguring the
+  # issuer at runtime.
+  def self.reset_discovery_config
+    @discovery_config = nil
   end
 end
 
@@ -71,24 +82,3 @@ require_relative 'identity/controller_helpers'
 require_relative 'identity/engine'
 require_relative 'identity/user'
 require_relative 'identity/version'
-
-# Monkeypatches OpenIDConnect to keep the HTTP scheme instead of forcing HTTPS for discovery
-# requests.
-#
-# See https://github.com/nov/openid_connect/issues/47#issuecomment-644799409
-Module.new do
-  attr_reader :scheme
-
-  def initialize(uri)
-    @scheme = uri.scheme
-    super
-  end
-
-  def endpoint
-    URI::Generic.build(scheme: scheme, host: host, port: port, path: path)
-  rescue URI::Error => e
-    raise SWD::Exception, e.message
-  end
-
-  prepend_features(::OpenIDConnect::Discovery::Provider::Config::Resource)
-end

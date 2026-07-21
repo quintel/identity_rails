@@ -43,12 +43,18 @@ RSpec.describe Identity::ControllerHelpers do
       before do
         controller.request.cookies[Identity.config.session_cookie_name] = 'raw.jwt'
         allow(Identity::TokenDecoder).to receive(:decode).and_return(
-          claims.merge('roles' => %w[admin researcher])
+          claims.merge('user' => { 'admin' => false }, 'roles' => %w[admin researcher])
         )
       end
 
-      it 'uses the roles claim' do
-        expect(controller.identity_user.roles).to include('researcher', 'admin')
+      # The provider mints no roles claim, so one appearing in a token is not something to trust:
+      # privileges come from the signed user.admin flag only.
+      it 'ignores it and derives roles from the admin flag' do
+        expect(controller.identity_user.roles).to eq(Set.new(%w[user]))
+      end
+
+      it 'does not grant admin' do
+        expect(controller.identity_user).not_to be_admin
       end
     end
 
