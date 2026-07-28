@@ -29,10 +29,23 @@ module Identity
   # this when, for example, building production images where the config is not yet available.
   setting :validate_config, default: true
 
+  # Appended to every shared-session cookie name, so deployments that share a cookie domain get
+  # distinct cookies. Beta and production both sit under energytransitionmodel.com with no common
+  # parent below it, so without different suffixes a sign-in on one replaces the other's session in
+  # the same browser with a token that side rejects. Empty everywhere except beta.
+  #
+  # Read from the environment rather than configured per app: the provider and every consumer must
+  # agree on the name, and one variable set on all of them is harder to get half-right.
+  COOKIE_SUFFIX = ENV.fetch('SSO_COOKIE_SUFFIX', '')
+
   # Name of the parent-domain JWT session cookie. The provider (MyETM) mints it on login and every
   # ETM app reads it as the browser session: a self-contained identity JWT, verified locally by
   # TokenDecoder. Auto-sent same-site to ETEngine, it unifies browser-session and API-bearer auth.
-  setting :session_cookie_name, default: 'etm_session'
+  setting :session_cookie_name, default: "etm_session#{COOKIE_SUFFIX}"
+
+  # Name of the companion hint cookie holding that session's expiry. Not HttpOnly and free of PII,
+  # it is how the session keeper times its refresh without reading the session cookie itself.
+  setting :session_exp_cookie_name, default: "etm_session_exp#{COOKIE_SUFFIX}"
 
   # Returns a Faraday connection to the Identity service, or the resource server.
   #
