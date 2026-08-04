@@ -12,14 +12,8 @@ module Identity
   # The Identity service's base URL.
   setting :issuer, default: 'https://engine.energytransitionmodel.com'
 
-  # The client ID to use when authenticating with the Identity service.
-  setting :client_id
-
-  # The client secret to use when authenticating with the Identity service.
-  setting :client_secret
-
-  # The base URL (protocol and hostname) of the application. This is used to construct the redirect
-  # URL for the Identity service.
+  # The base URL (protocol and hostname) of this application. It is the audience every token this
+  # app accepts must name, and where the provider returns a visitor to after signing in.
   setting :client_uri
 
   # Optional URL (protocol and hostname) for the resource server to connect to

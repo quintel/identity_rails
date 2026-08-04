@@ -35,13 +35,11 @@ module Identity
       "#{Identity.config.client_uri}#{return_to_path(main_app.root_path)}"
     end
 
-    # Passes the client id and a post-logout redirect.
+    # Passes where to send the visitor once the provider has ended the session. The provider
+    # validates it against the ETM app origins it serves.
     def logout_url
       uri = URI.parse(Identity.discovery_config[:end_session_endpoint])
-      uri.query = {
-        client_id: Identity.config.client_id,
-        post_logout_redirect_uri: "#{Identity.config.client_uri}/"
-      }.to_query
+      uri.query = { post_logout_redirect_uri: "#{Identity.config.client_uri}/" }.to_query
 
       uri.to_s
     end

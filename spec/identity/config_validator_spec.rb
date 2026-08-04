@@ -6,8 +6,6 @@ RSpec.describe Identity::ConfigValidator do
   let(:valid_config) do
     {
       issuer: 'https://issuer',
-      client_id: 'client_id_123',
-      client_secret: 'client_secret_123',
       client_uri: 'https://client'
     }
   end
@@ -80,22 +78,11 @@ RSpec.describe Identity::ConfigValidator do
     end
   end
 
-  context 'with a missing client_id' do
-    let(:config) { valid_config.except(:client_id) }
-
-    it 'is a failure' do
-      expect(result).to be_failure
-    end
-
-    it 'has an error on client_id' do
-      expect(result.errors[:client_id]).to include('is missing')
-    end
-  end
-
-  # Vestigial since sign-in stopped being an authorization-code flow: nothing exchanges a code, so
-  # no client secret is needed. Still accepted so existing deployments' settings remain valid.
-  context 'with a missing client_secret' do
-    let(:config) { valid_config.except(:client_secret) }
+  # Sign-in is no longer an authorization-code flow, so this app registers no client. A deployment
+  # whose settings still carry the old credentials stays valid: the contract ignores unknown keys.
+  # TODO: remove this once the old client_id/client_secret are gone from all deployments.
+  context 'with leftover client credentials' do
+    let(:config) { valid_config.merge(client_id: 'abc', client_secret: 'def') }
 
     it 'is a success' do
       expect(result).to be_success

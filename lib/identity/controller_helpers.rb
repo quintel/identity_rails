@@ -69,7 +69,6 @@ module Identity
     def user_profile_url
       uri = URI.parse(Identity.config.issuer)
       uri.path = '/identity/profile'
-      uri.query = { client_id: Identity.config.client_id }.to_query
 
       uri.to_s
     end
@@ -86,7 +85,7 @@ module Identity
     # Signing in is a plain top-level navigation to the provider: it owns the form, and its login
     # step sets the shared session cookie on the parent domain, which is all this app needs. There
     # is no OAuth round-trip to bring the visitor back, so the destination travels as `return_to`
-    # and the provider validates it against its registered applications before redirecting.
+    # and the provider validates it against the ETM app origins it serves before redirecting.
     def identity_sign_in_url(return_to: nil)
       uri = URI.parse(Identity.config.issuer)
       uri.path = '/identity/sign_in'

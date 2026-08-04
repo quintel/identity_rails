@@ -88,10 +88,7 @@ RSpec.describe 'Auth', type: :request do
     end
 
     context 'when signed in' do
-      before do
-        Identity.config.client_id = 'abc123'
-        sign_in_cookie(mock_identity_user_sign_in)
-      end
+      before { sign_in_cookie(mock_identity_user_sign_in) }
 
       it 'redirects to the Identity app' do
         post '/auth/sign_out'
@@ -100,16 +97,16 @@ RSpec.describe 'Auth', type: :request do
         expect(response.location).to start_with("#{Identity.config.issuer}/identity/sign_out")
       end
 
-      it 'builds an RP-initiated logout URL with the client id and no access token' do
+      # No client id and no access token: this app registers no client, and the provider validates
+      # the redirect against the ETM app origins it serves rather than against a registration.
+      # TODO: remove this once the old client_id/client_secret are gone from all deployments.
+      it 'builds a logout URL carrying only where to return to' do
         post '/auth/sign_out'
 
         uri = URI.parse(response.location)
         query = Rack::Utils.parse_nested_query(CGI.unescape(uri.query))
 
-        expect(query).to eq(
-          'client_id' => Identity.config.client_id,
-          'post_logout_redirect_uri' => "#{Identity.config.client_uri}/"
-        )
+        expect(query).to eq('post_logout_redirect_uri' => "#{Identity.config.client_uri}/")
       end
     end
   end

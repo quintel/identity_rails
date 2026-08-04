@@ -23,14 +23,14 @@ Add the engine to the Rails application Gemfile:
 gem 'identity_rails', github: 'quintel/identity_rails'
 ```
 
-Create an initializer to set the client ID and secret (provided by the Identity app):
+Create an initializer naming the Identity app and this application's own base URL.
 
 ```ruby
 # config/initializers/identity.rb
 
 # Restart the server after making changes to these settings.
-Identity.config.client_id = 'N8QmJxEELVK8gdjnLPTC6W6Etuf2cwcK'
-Identity.config.client_secret = 'qTG4zH6VZT2KPVinHE5KhBZoySTVAKD5'
+Identity.config.issuer = 'https://my.energytransitionmodel.com'
+Identity.config.client_uri = 'https://my-app.energytransitionmodel.com'
 ```
 
 **Note that the mount path `/auth` is required, and must not be changed.**
