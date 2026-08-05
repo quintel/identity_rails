@@ -18,9 +18,9 @@ RSpec.describe Identity::TokenDecoder do
     JWT.encode(payload, signing_key, 'RS256', kid: kid)
   end
 
-  before { allow(described_class).to receive(:jwk_set).and_return(jwk_set) }
-
   describe '.decode' do
+    before { allow(described_class).to receive(:jwk_set).and_return(jwk_set) }
+
     it 'decodes and returns a valid token' do
       decoded = described_class.decode(sign(claims))
 
@@ -89,6 +89,64 @@ RSpec.describe Identity::TokenDecoder do
     it 'rejects a token signed by an unknown key' do
       expect { described_class.decode(sign(claims, signing_key: OpenSSL::PKey::RSA.new(2048))) }
         .to raise_error(Identity::TokenDecoder::DecodeError)
+    end
+  end
+
+  # Unlike the rest of the file these exercise the real jwk_set, so they must not stub it.
+  describe '.decode when the provider cannot be reached' do
+    before { described_class.jwk_cache.delete(described_class::JWK_CACHE_KEY) }
+
+    # Mirrors the middleware stack of the real jwks_client; raise_error is what turns a non-2xx
+    # response into an exception.
+    def jwks_client(status, body = '')
+      Faraday.new do |conn|
+        conn.response(:json)
+        conn.response(:raise_error)
+        conn.adapter(:test) do |stub|
+          stub.get('/') { [status, { 'Content-Type' => 'application/json' }, body] }
+        end
+      end
+    end
+
+    it 'treats a JWKS endpoint error as an undecodable token' do
+      allow(described_class).to receive(:jwks_client).and_return(jwks_client(500))
+
+      expect { described_class.decode(sign(claims)) }
+        .to raise_error(Identity::TokenDecoder::DecodeError)
+    end
+
+    it 'treats a JWKS timeout as an undecodable token' do
+      client = instance_double(Faraday::Connection)
+      allow(client).to receive(:get).and_raise(Faraday::TimeoutError)
+      allow(described_class).to receive(:jwks_client).and_return(client)
+
+      expect { described_class.decode(sign(claims)) }
+        .to raise_error(Identity::TokenDecoder::DecodeError)
+    end
+
+    it 'treats a discovery document failure as an undecodable token' do
+      allow(Identity).to receive(:discovery_config).and_raise(Faraday::ConnectionFailed, 'refused')
+
+      expect { described_class.decode(sign(claims)) }
+        .to raise_error(Identity::TokenDecoder::DecodeError)
+    end
+
+    # Guards the deliberate choice of Faraday::Error over StandardError: a misconfiguration or a
+    # coding mistake must not be swallowed into a silent sign-out.
+    it 'lets a non-Faraday error propagate' do
+      allow(described_class).to receive(:jwks_client).and_raise(ArgumentError, 'no jwks_uri')
+
+      expect { described_class.decode(sign(claims)) }.to raise_error(ArgumentError)
+    end
+
+    # Nothing is cached on failure, so verification recovers as soon as the provider does.
+    it 'caches nothing, so the next attempt succeeds once the provider recovers' do
+      allow(described_class).to receive(:jwks_client)
+        .and_return(jwks_client(500), jwks_client(200, jwk_set.to_json))
+
+      expect { described_class.decode(sign(claims)) }
+        .to raise_error(Identity::TokenDecoder::DecodeError)
+      expect { described_class.decode(sign(claims)) }.not_to raise_error
     end
   end
 
