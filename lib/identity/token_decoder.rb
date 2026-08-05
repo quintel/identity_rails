@@ -85,6 +85,8 @@ module Identity
       jwk_cache.delete(JWK_CACHE_KEY) if invalidate
 
       jwk_cache.fetch(JWK_CACHE_KEY, expires_in: 24.hours) { jwks_client.get.body }
+    rescue Faraday::Error => e
+      raise JWT::DecodeError, "Could not fetch the provider's JWKS: #{e.message}"
     end
 
     def jwks_client
