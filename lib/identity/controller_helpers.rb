@@ -12,6 +12,9 @@ module Identity
       helper_method :sign_up_url
       helper_method :user_profile_url
       helper_method :identity_sign_in_url
+
+      # Guarded since some specs include this into a bare double without the callback API.
+      after_action :prevent_caching_of_flash_pages if respond_to?(:after_action)
     end
 
     # Rendering helpers
@@ -127,6 +130,11 @@ module Identity
     # fallback path.
     def return_to_path(fallback)
       session.delete(:return_to) || fallback
+    end
+
+    # Stops the browser resurrecting a stale flash (eg. "signed out") from the back/forward cache.
+    def prevent_caching_of_flash_pages
+      response.headers['Cache-Control'] = 'no-store' if flash.present?
     end
   end
 end
