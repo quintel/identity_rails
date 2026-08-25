@@ -85,11 +85,16 @@ export function startSessionKeeper({ idpUrl, expCookieName = DEFAULT_EXP_COOKIE 
   // lid for twenty minutes recover, rather than waiting for a tick that is never coming.
   const onVisible = () => document.visibilityState === "visible" && schedule();
 
+  // Force a reload when the user navigates back to a page that was rendered while they were signed out.
+  const onPageShow = (event) => event.persisted && window.location.reload();
+
   schedule();
   document.addEventListener("visibilitychange", onVisible);
+  window.addEventListener("pageshow", onPageShow);
 
   return () => {
     window.clearTimeout(timer);
     document.removeEventListener("visibilitychange", onVisible);
+    window.removeEventListener("pageshow", onPageShow);
   };
 }
