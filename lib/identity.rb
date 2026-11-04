@@ -90,6 +90,7 @@ end
 require_relative 'identity/errors'
 require_relative 'identity/config_validator'
 require_relative 'identity/resource_server'
+require_relative 'identity/scenario_access'
 require_relative 'identity/token_decoder'
 require_relative 'identity/controller_helpers'
 require_relative 'identity/engine'
