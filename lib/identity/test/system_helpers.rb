@@ -29,18 +29,20 @@ module Identity
         mock_identity_sign_in(admin: true, **kwargs)
       end
 
+      # Extra claims, such as a scenario_access grant, are added to the token as given.
       def mock_identity_sign_in(
         id: SecureRandom.random_number(1e10.to_i),
         name: 'John Doe',
         email: 'hello@example.org',
         admin: false,
-        expires_at: 1.hour.from_now
+        expires_at: 1.hour.from_now,
+        claims: {}
       )
         allow(Identity::TokenDecoder).to receive(:jwk_set).and_return(
           'keys' => [JWT::JWK.new(SystemHelpers.test_signing_key.public_key, TEST_KID).export]
         )
 
-        sign_test_jwt(id: id, name: name, email: email, admin: admin, expires_at: expires_at)
+        sign_test_jwt(id: id, name: name, email: email, admin: admin, expires_at: expires_at, claims: claims)
       end
 
       # Public: Places the token in the browser's cookie jar, as the provider would have done during
@@ -61,14 +63,14 @@ module Identity
       # Mints a token in the shape MyETM actually issues — see spec/fixtures/token_contract.json in
       # this gem. Notably there is no top-level `roles` claim: authorisation travels as the
       # `user.admin` boolean, and Identity::User derives roles from it.
-      def sign_test_jwt(id:, name:, email:, admin:, expires_at:)
+      def sign_test_jwt(id:, name:, email:, admin:, expires_at:, claims:)
         payload = {
           iss: Identity.config.issuer,
           aud: [Identity.config.client_uri],
           sub: id.to_s,
           exp: expires_at.to_i,
           user: { id: id, email: email, name: name, admin: admin }
-        }
+        }.merge(claims)
 
         JWT.encode(payload, SystemHelpers.test_signing_key, 'RS256', kid: TEST_KID)
       end

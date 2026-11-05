@@ -72,6 +72,18 @@ show a sign in prompt, while POST sends the user to the identity provider.
 Signing out is only possible with a POST request. The user will be signed out of the application
 _and_ the identity provider, and will finally be redirected back to the root of your application.
 
+### `Identity::ScenarioAccess`
+
+Reads the Sessions MyETM has granted on one Version from the token's `scenario_access` claim:
+
+```ruby
+access = Identity::ScenarioAccess.new(identity_token[Identity::ScenarioAccess::CLAIM], tag: 'latest')
+access.writable?(123)
+```
+
+`readable` and `writable` list the granted Session IDs. A `write` grant is also readable. A grant under
+another Version's tag gives nothing.
+
 ## License
 
 The gem is available as open source under the terms of the
